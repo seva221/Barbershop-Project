@@ -1,6 +1,6 @@
 // controllers/auth.business.controller.js
 import bcrypt from "bcrypt";
-import User from "../models/User.model.js";
+import User from "backend\models\User.model.js";
 import Business from "../models/Business.model.js";
 
 export const registerBusiness = async (req, res) => {
