@@ -1,7 +1,8 @@
 import express from "express";
 import dotenv from "dotenv";
 import connectDB from "./lib/connect.js";
-import router from "./routes/index.js";
+import userAuthRoutes from "./routes/auth.user.routes.js";
+import businessAuthRoutes from "./routes/auth.business.routes.js";
 import cors from "cors";
 
 dotenv.config();
@@ -12,7 +13,8 @@ app.use(cors());
 
 
 // Routes
-app.use("/api", router);
+app.use("/api/auth/user", userAuthRoutes);
+app.use("/api/auth/business", businessAuthRoutes);
 
 // Global error handler
 app.use((err, req, res, next) => {
