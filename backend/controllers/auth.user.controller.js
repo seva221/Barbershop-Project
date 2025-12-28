@@ -1,6 +1,6 @@
 // controllers/auth.user.controller.js
 import bcrypt from "bcrypt";
-import User from "backend\models\User.model.js";
+import User from "../models/user.model.js";
 
 export const registerUser = async (req, res) => {
   const { name, email, password } = req.body;
