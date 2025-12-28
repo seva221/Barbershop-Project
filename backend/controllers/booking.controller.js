@@ -1,38 +1,65 @@
-const Appointment = require('../models/Appointment');
-const Worker = require('../models/Worker');
+// controllers/booking.controller.js
+import mongoose from "mongoose";
+import Appointment from "../models/Appointment.js";
 
-exports.createAppointment = async (req, res) => {
+export const createAppointment = async (req, res) => {
   const session = await mongoose.startSession();
-  session.startTransaction(); // שימוש בטרנזקציה למניעת התנגשויות
+  session.startTransaction();
 
   try {
-    const { businessId, workerId, serviceId, date } = req.body;
+    const {
+      businessId,
+      workerId,
+      serviceId,
+      date,
+      customerId,
+      guestDetails,
+    } = req.body;
 
-    // 1. בדיקה אם הספר פנוי בשעה הזו
+    const bookingDate = new Date(date);
+
+    // Check if slot is already taken
     const existing = await Appointment.findOne({
       workerId,
-      date: new Date(date), // צריך לוודא טווח שעות מדויק
-      status: { $ne: 'cancelled' }
+      date: bookingDate,
+      status: { $ne: "cancelled" },
     }).session(session);
 
     if (existing) {
-      throw new Error('Time slot already taken');
+      return res.status(409).json({
+        success: false,
+        message: "Time slot already taken",
+      });
     }
 
-    // 2. יצירת ההזמנה
-    const newAppt = new Appointment({
-      businessId, workerId, serviceId, date, 
-      customerId: req.user ? req.user.id : null
-    });
+    // Create appointment
+    const appointment = await Appointment.create(
+      [
+        {
+          businessId,
+          workerId,
+          serviceId,
+          date: bookingDate,
+          customerId: customerId || null,
+          guestDetails: guestDetails || null,
+          status: "pending",
+        },
+      ],
+      { session }
+    );
 
-    await newAppt.save({ session });
     await session.commitTransaction();
 
-    res.status(201).json({ success: true, data: newAppt });
-
-  } catch (error) {
+    return res.status(201).json({
+      success: true,
+      appointment: appointment[0],
+    });
+  } catch (err) {
     await session.abortTransaction();
-    res.status(400).json({ success: false, message: error.message });
+    return res.status(400).json({
+      success: false,
+      message: err.message,
+    });
   } finally {
     session.endSession();
   }
