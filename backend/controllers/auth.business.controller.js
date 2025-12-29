@@ -1,17 +1,16 @@
+import { ZodError } from "zod";
 import {
   registerBusinessSchema,
   loginBusinessSchema,
 } from "../validations/business.auth.schema.js";
-
 import Business from "../models/Business.model.js";
 
 export const registerBusiness = async (req, res) => {
   try {
-    // ✅ Validate business input
-    const { name, ownerId, category } =
-      registerBusinessSchema.parse(req.body);
+    // Validate business input
+    const { name, ownerId, category } = registerBusinessSchema.parse(req.body);
 
-    // Optional: prevent duplicate business for same owner
+    // Check if owner already has a business
     const existingBusiness = await Business.findOne({ ownerId });
     if (existingBusiness) {
       return res
@@ -31,22 +30,24 @@ export const registerBusiness = async (req, res) => {
       business,
     });
   } catch (err) {
-    if (err.name === "ZodError") {
+    // Handle Zod validation errors
+    if (err instanceof ZodError) {
       return res.status(400).json({
         message: "Validation failed",
-        errors: err.errors.map((e) => e.message),
+        errors: err.issues.map((e) => e.message),
       });
     }
 
+    // Handle other errors
+    console.error(err);
     res.status(500).json({ message: "Server error" });
   }
 };
 
 export const loginBusiness = async (req, res) => {
   try {
-    // ✅ Validate login input
-    const { businessId, ownerId } =
-      loginBusinessSchema.parse(req.body);
+    // Validate login input
+    const { businessId, ownerId } = loginBusinessSchema.parse(req.body);
 
     const business = await Business.findOne({
       _id: businessId,
@@ -64,13 +65,16 @@ export const loginBusiness = async (req, res) => {
       business,
     });
   } catch (err) {
-    if (err.name === "ZodError") {
+    // Handle Zod validation errors
+    if (err instanceof ZodError) {
       return res.status(400).json({
         message: "Validation failed",
-        errors: err.errors.map((e) => e.message),
+        errors: err.issues.map((e) => e.message),
       });
     }
 
+    // Handle other errors
+    console.error(err);
     res.status(500).json({ message: "Server error" });
   }
 };
