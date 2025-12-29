@@ -1,6 +1,6 @@
-// controllers/booking.controller.js
 import mongoose from "mongoose";
-import Appointment from "../models/Appointment.js";
+
+import Appointment from "../models/Appointment.model.js"; 
 
 export const createAppointment = async (req, res) => {
   const session = await mongoose.startSession();
@@ -18,7 +18,7 @@ export const createAppointment = async (req, res) => {
 
     const bookingDate = new Date(date);
 
-    // Check if slot is already taken
+    // Check if slot is already taken (Exact Match)
     const existing = await Appointment.findOne({
       workerId,
       date: bookingDate,
@@ -26,6 +26,8 @@ export const createAppointment = async (req, res) => {
     }).session(session);
 
     if (existing) {
+      await session.abortTransaction();
+      session.endSession();
       return res.status(409).json({
         success: false,
         message: "Time slot already taken",
@@ -49,6 +51,7 @@ export const createAppointment = async (req, res) => {
     );
 
     await session.commitTransaction();
+    session.endSession();
 
     return res.status(201).json({
       success: true,
@@ -56,11 +59,36 @@ export const createAppointment = async (req, res) => {
     });
   } catch (err) {
     await session.abortTransaction();
+    session.endSession();
     return res.status(400).json({
       success: false,
       message: err.message,
     });
-  } finally {
-    session.endSession();
+  }
+};
+
+export const deleteAppointment = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Hard Delete: Removes document entirely from DB
+    const appointment = await Appointment.findByIdAndDelete(id);
+
+    if (!appointment) {
+      return res.status(404).json({
+        success: false,
+        message: "Appointment not found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Appointment deleted permanently from the database",
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
   }
 };
