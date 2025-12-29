@@ -3,6 +3,8 @@ import dotenv from "dotenv";
 import connectDB from "./lib/connect.js";
 import userAuthRoutes from "./routes/auth.user.routes.js";
 import businessAuthRoutes from "./routes/auth.business.routes.js";
+import resourceRoutes from "./routes/resources.routes.js";
+import bookingRoutes from "./routes/booking.routes.js";
 import cors from "cors";
 
 dotenv.config();
@@ -15,6 +17,8 @@ app.use(cors());
 // Routes
 app.use("/api/auth/user", userAuthRoutes);
 app.use("/api/auth/business", businessAuthRoutes);
+app.use("/api/resources", resourceRoutes);
+app.use("/api/booking", bookingRoutes);
 
 // Global error handler
 app.use((err, req, res, next) => {
