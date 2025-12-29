@@ -1,4 +1,3 @@
-// models/User.model.js
 import mongoose from "mongoose";
 
 const userSchema = new mongoose.Schema(
@@ -21,6 +20,7 @@ const userSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+// Hide passwordHash in JSON output
 userSchema.methods.toJSON = function () {
   const obj = this.toObject();
   delete obj.passwordHash;
