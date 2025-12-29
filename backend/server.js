@@ -15,6 +15,8 @@ app.use(express.json());
 
 app.use("/api/auth/user", userAuthRoutes);
 app.use("/api/auth/business", businessAuthRoutes);
+app.use("/api/bookings", bookingRoutes);
+
 
 const PORT = process.env.PORT || 4000;
 connectDB().then(() =>
