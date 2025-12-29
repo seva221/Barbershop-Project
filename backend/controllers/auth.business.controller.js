@@ -1,61 +1,76 @@
-import bcrypt from "bcrypt";
-import User from "../models/user.model.js";
+import {
+  registerBusinessSchema,
+  loginBusinessSchema,
+} from "../validations/business.auth.schema.js";
+
 import Business from "../models/Business.model.js";
 
 export const registerBusiness = async (req, res) => {
   try {
-    const { name, email, password, businessName } = req.body;
+    // ✅ Validate business input
+    const { name, ownerId, category } =
+      registerBusinessSchema.parse(req.body);
 
-    if (!name || !email || !password || !businessName) {
-      return res.status(400).json({ message: "All fields are required" });
+    // Optional: prevent duplicate business for same owner
+    const existingBusiness = await Business.findOne({ ownerId });
+    if (existingBusiness) {
+      return res
+        .status(409)
+        .json({ message: "Owner already has a business" });
     }
 
-    const exists = await User.findOne({ email });
-    if (exists) return res.status(409).json({ message: "Email already exists" });
-
-    const passwordHash = await bcrypt.hash(password, 10);
-
-    const owner = await User.create({
-      name,
-      email,
-      passwordHash,
-      role: "business", 
-    });
-
+    // Create business
     const business = await Business.create({
-      name: businessName,
-      ownerId: owner._id,
+      name,
+      ownerId,
+      category,
     });
 
-    owner.businessId = business._id;
-    await owner.save();
-
-    const ownerSafe = owner.toObject();
-    delete ownerSafe.passwordHash;
-
-    res.status(201).json({ owner: ownerSafe, business });
+    res.status(201).json({
+      message: "Business registered successfully",
+      business,
+    });
   } catch (err) {
-    console.error("Register Business error:", err);
+    if (err.name === "ZodError") {
+      return res.status(400).json({
+        message: "Validation failed",
+        errors: err.errors.map((e) => e.message),
+      });
+    }
+
     res.status(500).json({ message: "Server error" });
   }
 };
 
 export const loginBusiness = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    // ✅ Validate login input
+    const { businessId, ownerId } =
+      loginBusinessSchema.parse(req.body);
 
-    const owner = await User.findOne({ email, role: "business" }).populate("businessId"); // ✅ match registration
-    if (!owner) return res.status(401).json({ message: "Invalid credentials" });
+    const business = await Business.findOne({
+      _id: businessId,
+      ownerId,
+    });
 
-    const valid = await bcrypt.compare(password, owner.passwordHash);
-    if (!valid) return res.status(401).json({ message: "Invalid credentials" });
+    if (!business) {
+      return res
+        .status(401)
+        .json({ message: "Invalid business credentials" });
+    }
 
-    const ownerSafe = owner.toObject();
-    delete ownerSafe.passwordHash;
-
-    res.json(ownerSafe);
+    res.json({
+      message: "Business login successful",
+      business,
+    });
   } catch (err) {
-    console.error("Login Business error:", err);
+    if (err.name === "ZodError") {
+      return res.status(400).json({
+        message: "Validation failed",
+        errors: err.errors.map((e) => e.message),
+      });
+    }
+
     res.status(500).json({ message: "Server error" });
   }
 };
