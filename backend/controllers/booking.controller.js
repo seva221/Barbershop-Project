@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 import Appointment from "../models/Appointment.model.js";
-import { createBookingSchema } from "../validations/booking.auth.schema.js";
+import { createBookingSchema } from "../validations/booking.schema.js";
 
 export const createAppointment = async (req, res) => {
   const session = await mongoose.startSession();
