@@ -1,12 +1,25 @@
 import mongoose from "mongoose";
-
-import Appointment from "../models/Appointment.model.js"; 
+import Appointment from "../models/Appointment.model.js";
+import { createBookingSchema } from "../validations/booking.auth.schema.js";
 
 export const createAppointment = async (req, res) => {
   const session = await mongoose.startSession();
   session.startTransaction();
 
   try {
+    // 🔐 Validate request body with Zod
+    const parsed = createBookingSchema.safeParse(req.body);
+
+    if (!parsed.success) {
+      await session.abortTransaction();
+      session.endSession();
+
+      return res.status(400).json({
+        success: false,
+        errors: parsed.error.flatten(),
+      });
+    }
+
     const {
       businessId,
       workerId,
@@ -14,11 +27,11 @@ export const createAppointment = async (req, res) => {
       date,
       customerId,
       guestDetails,
-    } = req.body;
+    } = parsed.data;
 
     const bookingDate = new Date(date);
 
-    // Check if slot is already taken (Exact Match)
+    // ⛔ Check if slot is already taken (exact match)
     const existing = await Appointment.findOne({
       workerId,
       date: bookingDate,
@@ -28,13 +41,14 @@ export const createAppointment = async (req, res) => {
     if (existing) {
       await session.abortTransaction();
       session.endSession();
+
       return res.status(409).json({
         success: false,
         message: "Time slot already taken",
       });
     }
 
-    // Create appointment
+    // ✅ Create appointment
     const appointment = await Appointment.create(
       [
         {
@@ -60,7 +74,8 @@ export const createAppointment = async (req, res) => {
   } catch (err) {
     await session.abortTransaction();
     session.endSession();
-    return res.status(400).json({
+
+    return res.status(500).json({
       success: false,
       message: err.message,
     });
@@ -71,7 +86,7 @@ export const deleteAppointment = async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Hard Delete: Removes document entirely from DB
+    // 🗑 Hard delete
     const appointment = await Appointment.findByIdAndDelete(id);
 
     if (!appointment) {
@@ -81,12 +96,12 @@ export const deleteAppointment = async (req, res) => {
       });
     }
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       message: "Appointment deleted permanently from the database",
     });
   } catch (error) {
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: error.message,
     });
