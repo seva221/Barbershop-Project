@@ -1,44 +1,115 @@
 import Worker from "../models/worker.model.js";
 import Service from "../models/service.model.js";
+import {
+  createWorkerSchema,
+  createServiceSchema,
+} from "../validations/resources.schema.js";
 
-// --- WORKER FUNCTIONS ---
+/* =========================
+   WORKER CONTROLLERS
+========================= */
+
 export const createWorker = async (req, res) => {
   try {
-    const { name, businessId, phone } = req.body;
-    const worker = await Worker.create({ name, businessId, phone });
-    res.status(201).json(worker);
+    // 🔐 Zod validation
+    const parsed = createWorkerSchema.safeParse(req.body);
+
+    if (!parsed.success) {
+      return res.status(400).json({
+        success: false,
+        errors: parsed.error.flatten(),
+      });
+    }
+
+    const { name, businessId, phone } = parsed.data;
+
+    const worker = await Worker.create({
+      name,
+      businessId,
+      phone,
+    });
+
+    return res.status(201).json({
+      success: true,
+      worker,
+    });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
   }
 };
 
 export const getWorkers = async (req, res) => {
   try {
     const { businessId } = req.params;
+
     const workers = await Worker.find({ businessId });
-    res.json(workers);
+
+    return res.status(200).json({
+      success: true,
+      workers,
+    });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
   }
 };
 
-// --- SERVICE FUNCTIONS ---
+/* =========================
+   SERVICE CONTROLLERS
+========================= */
+
 export const createService = async (req, res) => {
   try {
-    const { name, duration, price, businessId } = req.body;
-    const service = await Service.create({ name, duration, price, businessId });
-    res.status(201).json(service);
+    // 🔐 Zod validation
+    const parsed = createServiceSchema.safeParse(req.body);
+
+    if (!parsed.success) {
+      return res.status(400).json({
+        success: false,
+        errors: parsed.error.flatten(),
+      });
+    }
+
+    const { name, duration, price, businessId } = parsed.data;
+
+    const service = await Service.create({
+      name,
+      duration,
+      price,
+      businessId,
+    });
+
+    return res.status(201).json({
+      success: true,
+      service,
+    });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
   }
 };
 
 export const getServices = async (req, res) => {
   try {
     const { businessId } = req.params;
+
     const services = await Service.find({ businessId });
-    res.json(services);
+
+    return res.status(200).json({
+      success: true,
+      services,
+    });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
   }
 };
