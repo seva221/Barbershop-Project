@@ -1,5 +1,6 @@
 import bcrypt from "bcrypt";
 import User from "../models/user.model.js";
+import jwt from "jsonwebtoken";
 import { registerSchema, loginSchema } from "../validations/auth.schema.js";
 
 /**
@@ -8,6 +9,11 @@ import { registerSchema, loginSchema } from "../validations/auth.schema.js";
 export const registerUser = async (req, res) => {
   try {
     // ✅ Validate input using Zod
+    // note - Idan K.
+    // this function is unsafe and shouldn't be used by the clients without authorization
+    // creating of a user with a role that is not authorized is a major vulnerability
+    // @@@@
+    // the function should be called only internally after validations have been made for the request.
     const { name, email, password, role, businessId } = registerSchema.parse(req.body);
 
     // Check if user already exists
@@ -28,7 +34,18 @@ export const registerUser = async (req, res) => {
       businessId: businessId || null,
     });
 
-    res.status(201).json(user);
+    // JWT TOKEN
+    const token = jwt.sign(
+      { id: user._id, role: user.role },
+      process.env.JWT_SECRET, 
+      { expiresIn: "7d" } 
+    );
+
+    // Remove passwordHash from the response for security
+    const userResponse = user.toObject();
+    delete userResponse.passwordHash;
+
+    res.status(201).json({ token, user: userResponse });
   } catch (err) {
     if (err.name === "ZodError") {
       return res.status(400).json({
@@ -62,7 +79,19 @@ export const loginUser = async (req, res) => {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
-    res.json(user);
+    // ✅ Generate Token for Login
+    const token = jwt.sign(
+      { id: user._id, role: user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    // Remove passwordHash from the response for security
+    const userResponse = user.toObject();
+    delete userResponse.passwordHash;
+
+    res.status(200).json({ token, user: userResponse });
+
   } catch (err) {
     if (err.name === "ZodError") {
       return res.status(400).json({

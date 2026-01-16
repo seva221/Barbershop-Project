@@ -15,6 +15,8 @@ app.use(cors());
 
 
 // Routes
+
+// /api/auth/user/ [register | login]
 app.use("/api/auth/user", userAuthRoutes);
 app.use("/api/auth/business", businessAuthRoutes);
 app.use("/api/resources", resourceRoutes);

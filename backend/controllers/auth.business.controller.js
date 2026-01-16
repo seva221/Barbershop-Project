@@ -25,10 +25,23 @@ export const registerBusiness = async (req, res) => {
       category,
     });
 
+    // JWT TOKEN
+    const token = jwt.sign(
+      { id: business._id, role: business.name },
+      process.env.JWT_SECRET, 
+      { expiresIn: "7d" } 
+    );
+
+    // Remove passwordHash from the response for security
+    const businessResponse = user.toObject();
+    delete businessResponse.passwordHash;
+
     res.status(201).json({
+      token, 
       message: "Business registered successfully",
-      business,
+      businessResponse,
     });
+
   } catch (err) {
     // Handle Zod validation errors
     if (err instanceof ZodError) {
@@ -49,6 +62,10 @@ export const loginBusiness = async (req, res) => {
     // Validate login input
     const { businessId, ownerId } = loginBusinessSchema.parse(req.body);
 
+
+    // note - Idan K. 
+    // putting in the owner ID to find the buisness
+    // I dont think it's the best option 
     const business = await Business.findOne({
       _id: businessId,
       ownerId,
@@ -60,9 +77,21 @@ export const loginBusiness = async (req, res) => {
         .json({ message: "Invalid business credentials" });
     }
 
-    res.json({
-      message: "Business login successful",
-      business,
+    // JWT TOKEN
+    const token = jwt.sign(
+      { id: business._id, role: business.name },
+      process.env.JWT_SECRET, 
+      { expiresIn: "7d" } 
+    );
+
+    // Remove passwordHash from the response for security
+    const businessResponse = user.toObject();
+    delete businessResponse.passwordHash;
+
+    res.status(200).json({
+      token, 
+      message: "Business registered successfully",
+      businessResponse,
     });
   } catch (err) {
     // Handle Zod validation errors
