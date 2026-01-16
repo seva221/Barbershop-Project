@@ -8,12 +8,13 @@ import { registerSchema, loginSchema } from "../validations/auth.schema.js";
  */
 export const registerUser = async (req, res) => {
   try {
-    // ✅ Validate input using Zod
     // note - Idan K.
     // this function is unsafe and shouldn't be used by the clients without authorization
     // creating of a user with a role that is not authorized is a major vulnerability
     // @@@@
     // the function should be called only internally after validations have been made for the request.
+    
+    // ✅ Validate input using Zod
     const { name, email, password, role, businessId } = registerSchema.parse(req.body);
 
     // Check if user already exists

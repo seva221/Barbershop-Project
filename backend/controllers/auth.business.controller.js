@@ -62,13 +62,11 @@ export const loginBusiness = async (req, res) => {
     // Validate login input
     const { businessId, ownerId } = loginBusinessSchema.parse(req.body);
 
-
-    // note - Idan K. 
-    // putting in the owner ID to find the buisness
-    // I dont think it's the best option 
+    // ownerId is to check if it matches the business
     const business = await Business.findOne({
-      _id: businessId,
+      _id: businessId, 
       ownerId,
+
     });
 
     if (!business) {
