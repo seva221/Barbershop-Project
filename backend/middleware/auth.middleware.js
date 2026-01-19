@@ -1,37 +1,28 @@
-import jwt from "jsonwebtoken"
+import jwt from "jsonwebtoken";
 
-
-
-// @@@
-// READ PLEASE
-// the function in terms of routes:
-// first going to check the token (authMiddleware), then going to the controller logic
-// @@@
+// Middleware that verifies a JWT from an HTTP-only cookie
 const authMiddleware = (req, res, next) => {
-    // 1. Get the token from the header
-    const authHeader = req.headers.authorization;
+  // Get token from cookies
+  const token = req.cookies.token;
 
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        return res.status(401).json({ message: 'No token provided' });
-    }
+  // Block request if no token exists
+  if (!token) {
+    return res.status(401).json({ message: "No token provided" });
+  }
 
-    // Extract the actual token string (remove "Bearer ")
-    const token = authHeader.split(' ')[1];
+  try {
+    // Verify token using secret key
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    try {
-        // 2. Verify the token
-        // If this fails (expired/fake), it throws an error automatically
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    // Attach decoded user data to request object
+    req.user = decoded;
 
-        // 3. Attach user info to the request
-        // Now your controllers can access req.user.id
-        req.user = decoded; 
-
-        // 4. Move to the next function (the controller)
-        next(); 
-    } catch (error) {
-        return res.status(401).json({ message: 'Invalid or expired token' });
-    }
+    // Continue to the next middleware or controller
+    next();
+  } catch (error) {
+    // Block request if token is invalid or expired
+    return res.status(401).json({ message: "Invalid or expired token" });
+  }
 };
 
 export default authMiddleware;
