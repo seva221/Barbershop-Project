@@ -1,4 +1,5 @@
 import express from "express";
+import authMiddleware from "../middleware/auth.middleware.js"
 import { 
   createWorker, 
   getWorkers, 
@@ -9,11 +10,14 @@ import {
 const router = express.Router();
 
 // Workers
-router.post("/workers", createWorker); // Create
-router.get("/workers/:businessId", getWorkers); // Get list
+
+// the middleware handles JWT confirmation
+// if none or incorrect -> reject (400, 401) 
+router.post("/workers",authMiddleware, createWorker); // Create
+router.get("/workers/:businessId",authMiddleware, getWorkers); // Get list
 
 // Services
-router.post("/services", createService); // Create
-router.get("/services/:businessId", getServices); // Get list
+router.post("/services",authMiddleware, createService); // Create
+router.get("/services/:businessId",authMiddleware, getServices); // Get list
 
 export default router;

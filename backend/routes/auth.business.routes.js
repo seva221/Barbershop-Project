@@ -7,6 +7,8 @@ import {
 
 const router = express.Router();
 
+// the middleware handles JWT confirmation
+// if none or incorrect -> reject (400, 401)
 router.post("/register", registerBusiness);
 router.post("/login", loginBusiness);
 
