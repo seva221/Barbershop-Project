@@ -46,7 +46,15 @@ export const registerUser = async (req, res) => {
     const userResponse = user.toObject();
     delete userResponse.passwordHash;
 
-    res.status(201).json({ token, user: userResponse });
+    res.cookie('token', token, {
+      httpOnly: true,  // ACTIVATE HTTP ONLY TO PREVENT XSS, DO NOT TOUCH !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
+      secure: process.env.NODE_ENV === 'production', // sends cookies only over https
+      sameSite: 'strict', // prevent cross site request forgery CSRF, only accept cookies that were made on the site 
+      maxAge: 3600_000 // N * 1000ms = N seconds
+    });
+
+    res.status(201).json({user: userResponse });
+
   } catch (err) {
     if (err.name === "ZodError") {
       return res.status(400).json({
@@ -91,7 +99,14 @@ export const loginUser = async (req, res) => {
     const userResponse = user.toObject();
     delete userResponse.passwordHash;
 
-    res.status(200).json({ token, user: userResponse });
+    res.cookie('token', token, {
+      httpOnly: true,  // ACTIVATE HTTP ONLY TO PREVENT XSS, DO NOT TOUCH !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
+      secure: process.env.NODE_ENV === 'production', // sends cookies only over https
+      sameSite: 'strict', // prevent cross site request forgery CSRF, only accept cookies that were made on the site 
+      maxAge: 3600_000 // N * 1000ms = N seconds
+    });
+
+    res.status(200).json({user: userResponse });
 
   } catch (err) {
     if (err.name === "ZodError") {

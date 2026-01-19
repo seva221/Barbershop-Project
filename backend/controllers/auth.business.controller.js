@@ -36,8 +36,15 @@ export const registerBusiness = async (req, res) => {
     const businessResponse = user.toObject();
     delete businessResponse.passwordHash;
 
+
+    res.cookie('token', token, {
+      httpOnly: true,  // ACTIVATE HTTP ONLY TO PREVENT XSS, DO NOT TOUCH !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
+      secure: process.env.NODE_ENV === 'production', // sends cookies only over https
+      sameSite: 'strict', // prevent cross site request forgery CSRF, only accept cookies that were made on the site 
+      maxAge: 3600_000 // N * 1000ms = N seconds
+    });
+
     res.status(201).json({
-      token, 
       message: "Business registered successfully",
       businessResponse,
     });
@@ -86,8 +93,14 @@ export const loginBusiness = async (req, res) => {
     const businessResponse = user.toObject();
     delete businessResponse.passwordHash;
 
+    res.cookie('token', token, {
+      httpOnly: true,  // ACTIVATE HTTP ONLY TO PREVENT XSS, DO NOT TOUCH !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
+      secure: process.env.NODE_ENV === 'production', // sends cookies only over https
+      sameSite: 'strict', // prevent cross site request forgery CSRF, only accept cookies that were made on the site 
+      maxAge: 3600_000 // N * 1000ms = N seconds
+    });
+
     res.status(200).json({
-      token, 
       message: "Business registered successfully",
       businessResponse,
     });
