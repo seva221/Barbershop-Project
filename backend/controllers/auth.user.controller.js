@@ -59,7 +59,7 @@ export const registerUser = async (req, res) => {
     if (err.name === "ZodError") {
       return res.status(400).json({
         message: "Validation failed",
-        errors: err.errors.map((e) => e.message),
+        errors: err.issues.map((e) => e.message),
       });
     }
 
@@ -112,7 +112,7 @@ export const loginUser = async (req, res) => {
     if (err.name === "ZodError") {
       return res.status(400).json({
         message: "Validation failed",
-        errors: err.errors.map((e) => e.message),
+        errors: err.issues.map((e) => e.message),
       });
     }
 
