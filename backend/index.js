@@ -6,11 +6,13 @@ import businessAuthRoutes from "./routes/auth.business.routes.js";
 import resourceRoutes from "./routes/resources.routes.js";
 import bookingRoutes from "./routes/booking.routes.js";
 import cors from "cors";
+import cookieParser from "cookie-parser";
 
 dotenv.config();
 
 const app = express();
 app.use(express.json());
+app.use(cookieParser());
 app.use(cors());
 
 

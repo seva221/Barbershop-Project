@@ -1,57 +1,66 @@
-import { ZodError } from "zod";
 import jwt from "jsonwebtoken";
+import bcrypt from "bcrypt";
+import { ZodError } from "zod";
+<<<<<<< HEAD
+import jwt from "jsonwebtoken";
+=======
+
+>>>>>>> 212b4ef (Fixed Buisness user with cookies)
 import {
   registerBusinessSchema,
   loginBusinessSchema,
 } from "../validations/business.auth.schema.js";
+
 import Business from "../models/Business.model.js";
 
+/* =========================
+   REGISTER BUSINESS
+========================= */
 export const registerBusiness = async (req, res) => {
   try {
-    // Validate business input
-    const { name, ownerId, category } = registerBusinessSchema.parse(req.body);
+    const { name, ownerId, category, email, password } =
+      registerBusinessSchema.parse(req.body);
 
-    // Check if owner already has a business
-    const existingBusiness = await Business.findOne({ ownerId });
+    const existingBusiness = await Business.findOne({ email });
     if (existingBusiness) {
-      return res
-        .status(409)
-        .json({ message: "Owner already has a business" });
+      return res.status(409).json({ message: "Email already in use" });
     }
 
-    // Create business
+    const passwordHash = await bcrypt.hash(password, 10);
+
     const business = await Business.create({
       name,
       ownerId,
       category,
+      email,
+      passwordHash,
     });
 
-    // JWT TOKEN
     const token = jwt.sign(
-      { id: business._id, role: business.name },
-      process.env.JWT_SECRET, 
-      { expiresIn: "7d" } 
+      {
+        businessId: business._id,
+        ownerId: business.ownerId,
+        role: "business",
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }
     );
 
-    // Remove passwordHash from the response for security
-    const businessResponse = user.toObject();
+    const businessResponse = business.toObject();
     delete businessResponse.passwordHash;
 
-
-    res.cookie('token', token, {
-      httpOnly: true,  // ACTIVATE HTTP ONLY TO PREVENT XSS, DO NOT TOUCH !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
-      secure: process.env.NODE_ENV === 'production', // sends cookies only over https
-      sameSite: 'strict', // prevent cross site request forgery CSRF, only accept cookies that were made on the site 
-      maxAge: 3600_000 // N * 1000ms = N seconds
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
     res.status(201).json({
       message: "Business registered successfully",
-      businessResponse,
+      business: businessResponse,
     });
-
   } catch (err) {
-    // Handle Zod validation errors
     if (err instanceof ZodError) {
       return res.status(400).json({
         message: "Validation failed",
@@ -59,54 +68,53 @@ export const registerBusiness = async (req, res) => {
       });
     }
 
-    // Handle other errors
     console.error(err);
     res.status(500).json({ message: "Server error" });
   }
 };
 
+/* =========================
+   LOGIN BUSINESS
+========================= */
 export const loginBusiness = async (req, res) => {
   try {
-    // Validate login input
-    const { businessId, ownerId } = loginBusinessSchema.parse(req.body);
+    const { email, password } = loginBusinessSchema.parse(req.body);
 
-    // ownerId is to check if it matches the business
-    const business = await Business.findOne({
-      _id: businessId, 
-      ownerId,
-
-    });
-
+    const business = await Business.findOne({ email });
     if (!business) {
-      return res
-        .status(401)
-        .json({ message: "Invalid business credentials" });
+      return res.status(401).json({ message: "Invalid credentials" });
     }
 
-    // JWT TOKEN
+    const isMatch = await bcrypt.compare(password, business.passwordHash);
+    if (!isMatch) {
+      return res.status(401).json({ message: "Invalid credentials" });
+    }
+
     const token = jwt.sign(
-      { id: business._id, role: business.name },
-      process.env.JWT_SECRET, 
-      { expiresIn: "7d" } 
+      {
+        businessId: business._id,
+        ownerId: business.ownerId,
+        role: "business",
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }
     );
 
-    // Remove passwordHash from the response for security
-    const businessResponse = user.toObject();
+    const businessResponse = business.toObject();
     delete businessResponse.passwordHash;
 
-    res.cookie('token', token, {
-      httpOnly: true,  // ACTIVATE HTTP ONLY TO PREVENT XSS, DO NOT TOUCH !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
-      secure: process.env.NODE_ENV === 'production', // sends cookies only over https
-      sameSite: 'strict', // prevent cross site request forgery CSRF, only accept cookies that were made on the site 
-      maxAge: 3600_000 // N * 1000ms = N seconds
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
     res.status(200).json({
-      message: "Business registered successfully",
-      businessResponse,
+      message: "Login successful",
+      business: businessResponse,
     });
   } catch (err) {
-    // Handle Zod validation errors
     if (err instanceof ZodError) {
       return res.status(400).json({
         message: "Validation failed",
@@ -114,7 +122,6 @@ export const loginBusiness = async (req, res) => {
       });
     }
 
-    // Handle other errors
     console.error(err);
     res.status(500).json({ message: "Server error" });
   }
