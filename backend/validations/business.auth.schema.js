@@ -1,20 +1,14 @@
+// validations/business.auth.schema.js
 import { z } from "zod";
-import mongoose from "mongoose";
-
-const objectId = z.string().refine(
-  (val) => mongoose.Types.ObjectId.isValid(val),
-  { message: "Invalid ObjectId" }
-);
 
 export const registerBusinessSchema = z.object({
-  name: z.string().min(2),
-  ownerId: objectId,
-  category: z.string().optional(),
-  email: z.string().email(),
-  password: z.string().min(6),
+  name: z.string().min(2, "Business name is required"), // Business name
+  category: z.string().optional(),                       // Optional category
+  email: z.string().email("Valid email required"),      // Business / owner email
+  password: z.string().min(6, "Password must be at least 6 chars"), // Plain password
 });
 
 export const loginBusinessSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(6),
+  email: z.string().email("Valid email required"),
+  password: z.string().min(6, "Password must be at least 6 chars"),
 });

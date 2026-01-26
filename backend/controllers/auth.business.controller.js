@@ -3,17 +3,24 @@ import bcrypt from "bcrypt";
 import { ZodError } from "zod";
 import { registerBusinessSchema, loginBusinessSchema } from "../validations/business.auth.schema.js";
 import Business from "../models/Business.model.js";
+import User from "../models/user.model.js";
 
 /* ========================= REGISTER BUSINESS ========================= */
 export const registerBusiness = async (req, res) => {
   try {
     // Validate input
-    const { name, ownerId, category, email, password } = registerBusinessSchema.parse(req.body);
+    const { name, category, email, password } = registerBusinessSchema.parse(req.body);
 
-    // Check if email or owner already exists
+    // Get ownerId from JWT cookie
+    const ownerId = req.user?.id;
+    if (!ownerId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    // Check if email is already used
     const existingBusiness = await Business.findOne({ email });
     if (existingBusiness) {
-      return res.status(409).json({ message: "email already in use" });
+      return res.status(409).json({ message: "Email already in use" });
     }
 
     // Hash password
@@ -21,20 +28,19 @@ export const registerBusiness = async (req, res) => {
 
     // Create business
     const business = await Business.create({
-      name,
+      name,       // use the destructured `name`
       ownerId,
-      category,
+      category: category || "Barbershop",
       email,
       passwordHash,
     });
 
-    // Generate JWT
+    // Update user's businessId
+    await User.findByIdAndUpdate(ownerId, { businessId: business._id });
+
+    // Generate JWT with updated businessId
     const token = jwt.sign(
-      {
-        businessId: business._id,
-        ownerId: business.ownerId,
-        role: "business",
-      },
+      { id: ownerId, role: "business", businessId: business._id },
       process.env.JWT_SECRET,
       { expiresIn: "7d" }
     );
@@ -88,9 +94,9 @@ export const loginBusiness = async (req, res) => {
     // Generate JWT
     const token = jwt.sign(
       {
-        businessId: business._id,
-        ownerId: business.ownerId,
+        userId: business.ownerId,
         role: "business",
+        businessId: business._id,
       },
       process.env.JWT_SECRET,
       { expiresIn: "7d" }
