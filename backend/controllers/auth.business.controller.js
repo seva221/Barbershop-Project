@@ -1,119 +1,130 @@
+import jwt from "jsonwebtoken";
+import bcrypt from "bcrypt";
 import { ZodError } from "zod";
-import {
-  registerBusinessSchema,
-  loginBusinessSchema,
-} from "../validations/business.auth.schema.js";
+import { registerBusinessSchema, loginBusinessSchema } from "../validations/business.auth.schema.js";
 import Business from "../models/Business.model.js";
+import User from "../models/user.model.js";
 
+/* ========================= REGISTER BUSINESS ========================= */
 export const registerBusiness = async (req, res) => {
   try {
-    // Validate business input
-    const { name, ownerId, category } = registerBusinessSchema.parse(req.body);
+    // Validate input
+    const { name, category, email, password } = registerBusinessSchema.parse(req.body);
 
-    // Check if owner already has a business
-    const existingBusiness = await Business.findOne({ ownerId });
-    if (existingBusiness) {
-      return res
-        .status(409)
-        .json({ message: "Owner already has a business" });
+    // Get ownerId from JWT cookie
+    const ownerId = req.user?.id;
+    if (!ownerId) {
+      return res.status(401).json({ message: "Unauthorized" });
     }
+
+    // Check if email is already used
+    const existingBusiness = await Business.findOne({ email });
+    if (existingBusiness) {
+      return res.status(409).json({ message: "Email already in use" });
+    }
+
+    // Hash password
+    const passwordHash = await bcrypt.hash(password, 10);
 
     // Create business
     const business = await Business.create({
-      name,
+      name,       // use the destructured `name`
       ownerId,
-      category,
+      category: category || "Barbershop",
+      email,
+      passwordHash,
     });
 
-    // JWT TOKEN
+    // Update user's businessId
+    await User.findByIdAndUpdate(ownerId, { businessId: business._id });
+
+    // Generate JWT with updated businessId
     const token = jwt.sign(
-      { id: business._id, role: business.name },
-      process.env.JWT_SECRET, 
-      { expiresIn: "7d" } 
+      { id: ownerId, role: "business", businessId: business._id },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }
     );
 
-    // Remove passwordHash from the response for security
-    const businessResponse = user.toObject();
+    // Prepare response
+    const businessResponse = business.toObject();
     delete businessResponse.passwordHash;
 
-
-    res.cookie('token', token, {
-      httpOnly: true,  // ACTIVATE HTTP ONLY TO PREVENT XSS, DO NOT TOUCH !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
-      secure: process.env.NODE_ENV === 'production', // sends cookies only over https
-      sameSite: 'strict', // prevent cross site request forgery CSRF, only accept cookies that were made on the site 
-      maxAge: 3600_000 // N * 1000ms = N seconds
+    // Set HTTP-only cookie
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
 
     res.status(201).json({
       message: "Business registered successfully",
-      businessResponse,
+      business: businessResponse,
     });
-
   } catch (err) {
-    // Handle Zod validation errors
     if (err instanceof ZodError) {
       return res.status(400).json({
         message: "Validation failed",
         errors: err.issues.map((e) => e.message),
       });
     }
-
-    // Handle other errors
     console.error(err);
     res.status(500).json({ message: "Server error" });
   }
 };
 
+/* ========================= LOGIN BUSINESS ========================= */
 export const loginBusiness = async (req, res) => {
   try {
-    // Validate login input
-    const { businessId, ownerId } = loginBusinessSchema.parse(req.body);
+    // Validate input
+    const { email, password } = loginBusinessSchema.parse(req.body);
 
-    // ownerId is to check if it matches the business
-    const business = await Business.findOne({
-      _id: businessId, 
-      ownerId,
-
-    });
-
+    // Find business by email
+    const business = await Business.findOne({ email });
     if (!business) {
-      return res
-        .status(401)
-        .json({ message: "Invalid business credentials" });
+      return res.status(401).json({ message: "Invalid credentials" });
     }
 
-    // JWT TOKEN
+    // Verify password
+    const isMatch = await bcrypt.compare(password, business.passwordHash);
+    if (!isMatch) {
+      return res.status(401).json({ message: "Invalid credentials" });
+    }
+
+    // Generate JWT
     const token = jwt.sign(
-      { id: business._id, role: business.name },
-      process.env.JWT_SECRET, 
-      { expiresIn: "7d" } 
+      {
+        userId: business.ownerId,
+        role: "business",
+        businessId: business._id,
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }
     );
 
-    // Remove passwordHash from the response for security
-    const businessResponse = user.toObject();
+    // Prepare response
+    const businessResponse = business.toObject();
     delete businessResponse.passwordHash;
 
-    res.cookie('token', token, {
-      httpOnly: true,  // ACTIVATE HTTP ONLY TO PREVENT XSS, DO NOT TOUCH !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
-      secure: process.env.NODE_ENV === 'production', // sends cookies only over https
-      sameSite: 'strict', // prevent cross site request forgery CSRF, only accept cookies that were made on the site 
-      maxAge: 3600_000 // N * 1000ms = N seconds
+    // Set HTTP-only cookie
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
 
     res.status(200).json({
-      message: "Business registered successfully",
-      businessResponse,
+      message: "Business login successful",
+      business: businessResponse,
     });
   } catch (err) {
-    // Handle Zod validation errors
     if (err instanceof ZodError) {
       return res.status(400).json({
         message: "Validation failed",
         errors: err.issues.map((e) => e.message),
       });
     }
-
-    // Handle other errors
     console.error(err);
     res.status(500).json({ message: "Server error" });
   }

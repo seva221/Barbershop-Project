@@ -46,11 +46,12 @@ export const registerUser = async (req, res) => {
     const userResponse = user.toObject();
     delete userResponse.passwordHash;
 
+    // ✅ Set HTTP-only cookie matching business controller
     res.cookie('token', token, {
-      httpOnly: true,  // ACTIVATE HTTP ONLY TO PREVENT XSS, DO NOT TOUCH !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
-      secure: process.env.NODE_ENV === 'production', // sends cookies only over https
-      sameSite: 'strict', // prevent cross site request forgery CSRF, only accept cookies that were made on the site 
-      maxAge: 3600_000 // N * 1000ms = N seconds
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
 
     res.status(201).json({user: userResponse });
@@ -59,7 +60,7 @@ export const registerUser = async (req, res) => {
     if (err.name === "ZodError") {
       return res.status(400).json({
         message: "Validation failed",
-        errors: err.errors.map((e) => e.message),
+        errors: err.issues.map((e) => e.message),
       });
     }
 
@@ -99,11 +100,12 @@ export const loginUser = async (req, res) => {
     const userResponse = user.toObject();
     delete userResponse.passwordHash;
 
+    // ✅ Set HTTP-only cookie matching business controller
     res.cookie('token', token, {
-      httpOnly: true,  // ACTIVATE HTTP ONLY TO PREVENT XSS, DO NOT TOUCH !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
-      secure: process.env.NODE_ENV === 'production', // sends cookies only over https
-      sameSite: 'strict', // prevent cross site request forgery CSRF, only accept cookies that were made on the site 
-      maxAge: 3600_000 // N * 1000ms = N seconds
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
 
     res.status(200).json({user: userResponse });
@@ -112,7 +114,7 @@ export const loginUser = async (req, res) => {
     if (err.name === "ZodError") {
       return res.status(400).json({
         message: "Validation failed",
-        errors: err.errors.map((e) => e.message),
+        errors: err.issues.map((e) => e.message),
       });
     }
 
