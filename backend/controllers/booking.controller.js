@@ -79,7 +79,7 @@ export const createAppointment = async (req, res) => {
           workerId,
           serviceId,
           date: bookingDate,
-          customerId: userId, // 🔥 Taken from JWT, NOT from frontend
+          customerId: userId, // Taken from JWT, NOT from frontend
           guestDetails: guestDetails || null,
           status: "pending",
         },
