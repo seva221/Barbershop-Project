@@ -44,7 +44,7 @@ export const createBookingSchema = z
       .refine((date) => !isNaN(date.getTime()), {
         message: "Invalid date",
       })
-      .refine((date) => date > new Date(), {
+      .refine((date) => date.getTime() > new Date(), {
         message: "Booking date must be in the future",
       }),
   })

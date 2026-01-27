@@ -1,19 +1,32 @@
 import mongoose from "mongoose";
 import Appointment from "../models/Appointment.model.js";
+import Business from "../models/Business.model.js";
 import { createBookingSchema } from "../validations/booking.schema.js";
 
+/* ========================= CREATE APPOINTMENT ========================= */
 export const createAppointment = async (req, res) => {
   const session = await mongoose.startSession();
   session.startTransaction();
 
   try {
-    // 🔐 Validate request body with Zod
-    const parsed = createBookingSchema.safeParse(req.body);
+    // 🔐 Must be logged in (set by authMiddleware)
+    const { id: userId, role } = req.user;
 
+    // 🛑 Only customers can create bookings
+    if (role !== "customer") {
+      await session.abortTransaction();
+      session.endSession();
+      return res.status(403).json({
+        success: false,
+        message: "Only customers can create appointments",
+      });
+    }
+
+    // 🔐 Validate request body
+    const parsed = createBookingSchema.safeParse(req.body);
     if (!parsed.success) {
       await session.abortTransaction();
       session.endSession();
-
       return res.status(400).json({
         success: false,
         errors: parsed.error.flatten(),
@@ -25,14 +38,25 @@ export const createAppointment = async (req, res) => {
       workerId,
       serviceId,
       date,
-      customerId,
       guestDetails,
     } = parsed.data;
 
     const bookingDate = new Date(date);
 
-    // ⛔ Check if slot is already taken (exact match)
+    // 🔎 Verify business exists
+    const businessExists = await Business.findById(businessId).session(session);
+    if (!businessExists) {
+      await session.abortTransaction();
+      session.endSession();
+      return res.status(404).json({
+        success: false,
+        message: "Business not found",
+      });
+    }
+
+    // ⛔ Check if slot is already taken
     const existing = await Appointment.findOne({
+      businessId,
       workerId,
       date: bookingDate,
       status: { $ne: "cancelled" },
@@ -41,7 +65,6 @@ export const createAppointment = async (req, res) => {
     if (existing) {
       await session.abortTransaction();
       session.endSession();
-
       return res.status(409).json({
         success: false,
         message: "Time slot already taken",
@@ -56,7 +79,7 @@ export const createAppointment = async (req, res) => {
           workerId,
           serviceId,
           date: bookingDate,
-          customerId: customerId || null,
+          customerId: userId, // 🔥 Taken from JWT, NOT from frontend
           guestDetails: guestDetails || null,
           status: "pending",
         },
@@ -82,13 +105,13 @@ export const createAppointment = async (req, res) => {
   }
 };
 
+/* ========================= DELETE APPOINTMENT ========================= */
 export const deleteAppointment = async (req, res) => {
   try {
+    const { id: userId, role, businessId } = req.user;
     const { id } = req.params;
 
-    // 🗑 Hard delete
-    const appointment = await Appointment.findByIdAndDelete(id);
-
+    const appointment = await Appointment.findById(id);
     if (!appointment) {
       return res.status(404).json({
         success: false,
@@ -96,9 +119,26 @@ export const deleteAppointment = async (req, res) => {
       });
     }
 
+    const isCustomerOwner =
+      role === "customer" &&
+      appointment.customerId?.toString() === userId;
+
+    const isBusinessOwner =
+      role === "business" &&
+      appointment.businessId.toString() === businessId;
+
+    if (!isCustomerOwner && !isBusinessOwner) {
+      return res.status(403).json({
+        success: false,
+        message: "Not authorized to delete this appointment",
+      });
+    }
+
+    await Appointment.findByIdAndDelete(id);
+
     return res.status(200).json({
       success: true,
-      message: "Appointment deleted permanently from the database",
+      message: "Appointment deleted permanently",
     });
   } catch (error) {
     return res.status(500).json({
