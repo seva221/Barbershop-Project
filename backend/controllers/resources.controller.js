@@ -1,9 +1,6 @@
 import Worker from "../models/worker.model.js";
 import Service from "../models/service.model.js";
-import {
-  createWorkerSchema,
-  createServiceSchema,
-} from "../validations/resources.schema.js";
+import { createWorkerSchema, createServiceSchema } from "../validations/resources.schema.js";
 
 /* =========================
    WORKER CONTROLLERS
@@ -11,7 +8,7 @@ import {
 
 export const createWorker = async (req, res) => {
   try {
-    // 🔐 Zod validation
+    // 🔐 Zod validation (excluding businessId, since we take it from JWT)
     const parsed = createWorkerSchema.safeParse(req.body);
 
     if (!parsed.success) {
@@ -21,12 +18,21 @@ export const createWorker = async (req, res) => {
       });
     }
 
-    const { name, businessId, phone } = parsed.data;
+    const { name, phone } = parsed.data;
+
+    // 🔑 Get businessId from JWT (set by authMiddleware)
+    const { role, businessId } = req.user;
+    if (role !== "business" || !businessId) {
+      return res.status(403).json({
+        success: false,
+        message: "Only logged-in businesses can create workers",
+      });
+    }
 
     const worker = await Worker.create({
       name,
-      businessId,
       phone,
+      businessId, // automatically from JWT
     });
 
     return res.status(201).json({
@@ -65,7 +71,7 @@ export const getWorkers = async (req, res) => {
 
 export const createService = async (req, res) => {
   try {
-    // 🔐 Zod validation
+    // 🔐 Zod validation (excluding businessId, taken from JWT)
     const parsed = createServiceSchema.safeParse(req.body);
 
     if (!parsed.success) {
@@ -75,13 +81,22 @@ export const createService = async (req, res) => {
       });
     }
 
-    const { name, duration, price, businessId } = parsed.data;
+    const { name, duration, price } = parsed.data;
+
+    // 🔑 Get businessId from JWT
+    const { role, businessId } = req.user;
+    if (role !== "business" || !businessId) {
+      return res.status(403).json({
+        success: false,
+        message: "Only logged-in businesses can create services",
+      });
+    }
 
     const service = await Service.create({
       name,
       duration,
       price,
-      businessId,
+      businessId, // automatically from JWT
     });
 
     return res.status(201).json({

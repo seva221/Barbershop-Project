@@ -20,8 +20,6 @@ export const createWorkerSchema = z.object({
     .min(2, "Worker name must be at least 2 characters")
     .regex(/^[A-Za-z\s]+$/, "Worker name must contain letters only"),
 
-  businessId: objectId,
-
   phone: z
     .string()
     .min(10, "Phone number must be at least 10 digits")
@@ -46,6 +44,4 @@ export const createServiceSchema = z.object({
   price: z
     .number()
     .min(0, "Price cannot be negative"),
-
-  businessId: objectId,
 });
