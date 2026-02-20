@@ -1,4 +1,3 @@
-// models/Business.model.js
 import mongoose from "mongoose";
 
 const businessSchema = new mongoose.Schema(
@@ -10,7 +9,6 @@ const businessSchema = new mongoose.Schema(
       trim: true,
     },
 
-    // each owner can own only ONE business
     ownerId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
@@ -34,6 +32,12 @@ const businessSchema = new mongoose.Schema(
     passwordHash: {
       type: String,
       required: true,
+    },
+
+    status: {
+      type: String,
+      enum: ["pending", "approved", "rejected"],
+      default: "pending",
     },
   },
   { timestamps: true }

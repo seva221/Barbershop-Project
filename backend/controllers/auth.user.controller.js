@@ -1,124 +1,68 @@
-import bcrypt from "bcrypt";
-import User from "../models/user.model.js";
-import jwt from "jsonwebtoken";
-import { registerSchema, loginSchema } from "../validations/auth.schema.js";
+// backend/controllers/auth.user.controller.js
+import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
+import User from '../models/user.model.js';
+import { registerSchema, loginSchema } from '../validations/auth.schema.js'; // וודא שיש לך סכמה כזו
 
-/**
- * REGISTER USER
- */
 export const registerUser = async (req, res) => {
   try {
-    // note - Idan K.
-    // this function is unsafe and shouldn't be used by the clients without authorization
-    // creating of a user with a role that is not authorized is a major vulnerability
-    // @@@@
-    // the function should be called only internally after validations have been made for the request.
-    
-    // ✅ Validate input using Zod
-    const { name, email, password, role, businessId } = registerSchema.parse(req.body);
-
-    // Check if user already exists
+    const { name, email, password } = registerSchema.parse(req.body);
     const exists = await User.findOne({ email });
-    if (exists) {
-      return res.status(409).json({ message: "Email already exists" });
-    }
+    if (exists) return res.status(409).json({ message: "Email already exists" });
 
-    // Hash password
     const passwordHash = await bcrypt.hash(password, 10);
-
-    // Create user
     const user = await User.create({
       name,
       email,
       passwordHash,
-      role: role || "customer",
-      businessId: businessId || null,
+      role: "customer",
+      businessId: null,
     });
 
-    // JWT TOKEN
-    const token = jwt.sign(
-      { id: user._id, role: user.role },
-      process.env.JWT_SECRET, 
-      { expiresIn: "7d" } 
-    );
-
-    // Remove passwordHash from the response for security
-    const userResponse = user.toObject();
-    delete userResponse.passwordHash;
-
-    // ✅ Set HTTP-only cookie matching business controller
-    res.cookie('token', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    });
-
-    res.status(201).json({user: userResponse });
-
+    const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: "7d" });
+    res.cookie("token", token, { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "strict", maxAge: 7 * 24 * 60 * 60 * 1000 });
+    res.status(201).json({ user, token }); // הוספתי token גם ב-json לנוחות ה-Frontend
   } catch (err) {
-    if (err.name === "ZodError") {
-      return res.status(400).json({
-        message: "Validation failed",
-        errors: err.issues.map((e) => e.message),
-      });
-    }
-
-    console.error(err);
+    if (err.name === "ZodError") return res.status(400).json({ message: "Validation failed", errors: err.issues.map(e => e.message) });
     res.status(500).json({ message: "Server error" });
   }
 };
 
-/**
- * LOGIN USER
- */
+// --- הוסף את הפונקציה הזו עכשיו ---
 export const loginUser = async (req, res) => {
   try {
-    // ✅ Validate input using Zod
-    const { email, password } = loginSchema.parse(req.body);
+    const { email, password } = req.body; // או loginSchema.parse(req.body) אם הגדרת סכמה
 
-    // Find user with role customer
-    const user = await User.findOne({ email, role: "customer" });
+    const user = await User.findOne({ email });
     if (!user) {
-      return res.status(401).json({ message: "Invalid credentials" });
+      return res.status(401).json({ message: "Invalid email or password" });
     }
 
-    // Verify password
-    const valid = await bcrypt.compare(password, user.passwordHash);
-    if (!valid) {
-      return res.status(401).json({ message: "Invalid credentials" });
+    const isMatch = await bcrypt.compare(password, user.passwordHash);
+    if (!isMatch) {
+      return res.status(401).json({ message: "Invalid email or password" });
     }
 
-    // ✅ Generate Token for Login
     const token = jwt.sign(
       { id: user._id, role: user.role },
       process.env.JWT_SECRET,
       { expiresIn: "7d" }
     );
 
-    // Remove passwordHash from the response for security
-    const userResponse = user.toObject();
-    delete userResponse.passwordHash;
-
-    // ✅ Set HTTP-only cookie matching business controller
-    res.cookie('token', token, {
+    res.cookie("token", token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
-    res.status(200).json({user: userResponse });
+    res.status(200).json({ 
+      message: "Logged in successfully",
+      token, 
+      user: { id: user._id, name: user.name, email: user.email, role: user.role } 
+    });
 
   } catch (err) {
-    if (err.name === "ZodError") {
-      return res.status(400).json({
-        message: "Validation failed",
-        errors: err.issues.map((e) => e.message),
-      });
-    }
-
-    console.error(err);
     res.status(500).json({ message: "Server error" });
   }
 };

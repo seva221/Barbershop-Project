@@ -15,6 +15,7 @@ const userSchema = new mongoose.Schema(
     businessId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Business",
+      default: null,
     },
   },
   { timestamps: true }
