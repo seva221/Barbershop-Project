@@ -36,11 +36,11 @@ export const register = async (name, email, password) => {
   return handleResponse(response);
 };
 
-export const registerBusiness = async (businessData) => {
+export const registerBusiness = async (name, email, password, address, category) => {
   const response = await fetch(`${BASE_URL}/auth/business/register`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(businessData),
+    body: JSON.stringify({ name, email, password, address, category }),
   });
   return handleResponse(response);
 };

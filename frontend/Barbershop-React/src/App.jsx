@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import * as api from './api';
 
-// --- STYLES (מתוקן ליישור לימין ותמיכה ב-RTL) ---
+// --- STYLES ---
 const GLOBAL_STYLES = `
 :root {
   --primary: #0f172a;
@@ -21,13 +21,12 @@ body {
   background: var(--bg); 
   color: var(--text-main); 
   direction: rtl; 
-  text-align: right; /* יישור טקסט לימין */
+  text-align: right; 
   line-height: 1.6;
 }
 
 .container { max-width: 1100px; margin: 0 auto; padding: 0 1.5rem; }
 
-/* Navbar - תיקון יישור */
 .navbar { 
   background: rgba(255, 255, 255, 0.8); 
   backdrop-filter: blur(10px); 
@@ -41,7 +40,7 @@ body {
   display: flex; 
   justify-content: space-between; 
   align-items: center; 
-  flex-direction: row-reverse; /* הופך את הסדר עבור עברית */
+  flex-direction: row-reverse; 
 }
 .brand { 
   font-size: 1.5rem; 
@@ -54,7 +53,6 @@ body {
 }
 .brand span { color: var(--accent); }
 
-/* Hero Section */
 .hero { 
   text-align: center; 
   padding: 6rem 1rem; 
@@ -67,7 +65,6 @@ body {
   -webkit-text-fill-color: transparent;
 }
 
-/* Grid & Cards */
 .grid { display: grid; gap: 2rem; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); margin-top: 2rem; }
 .card { 
   background: var(--card-bg); 
@@ -81,7 +78,6 @@ body {
 .card-img { width: 100%; height: 220px; object-fit: cover; }
 .card-content { padding: 1.5rem; }
 
-/* Inputs & Forms - תיקון יישור */
 .input-field {
   width: 100%;
   padding: 1rem;
@@ -92,18 +88,17 @@ body {
   font-size: 1rem;
   transition: 0.2s;
   background: #fff;
-  text-align: right; /* יישור הקלדה לימין */
+  text-align: right; 
 }
 .input-field:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1); }
 
-/* Tabs for Auth */
 .tabs {
   display: flex;
   background: #f1f5f9;
   padding: 0.3rem;
   border-radius: 12px;
   margin-bottom: 1.5rem;
-  direction: ltr; /* כפתורי הטאבים יישארו משמאל לימין למראה מודרני */
+  direction: ltr; 
 }
 .tab {
   flex: 1;
@@ -148,7 +143,7 @@ const Navbar = ({ user, setView, onLogout }) => (
             <div style={{textAlign:'right'}}>
               <div style={{fontWeight:'800', fontSize:'0.9rem'}}>{user.name}</div>
               <div style={{fontSize:'0.75rem', color:'var(--text-muted)'}}>
-                {user.role === 'admin' ? 'מנהל עסק' : 'לקוח'}
+                {user.role === 'business' ? 'מנהל עסק' : 'לקוח'}
               </div>
             </div>
             <button onClick={onLogout} style={{background:'none', border:'none', cursor:'pointer', fontSize:'1.2rem'}}>{Icons.LogOut}</button>
@@ -161,7 +156,7 @@ const Navbar = ({ user, setView, onLogout }) => (
   </nav>
 );
 
-const Auth = ({ onLogin, onRegisterUser, onRegisterBusiness }) => {
+const Auth = ({ onLogin, onLoginBusiness, onRegisterUser, onRegisterBusiness }) => {
   const [isLogin, setIsLogin] = useState(true);
   const [regType, setRegType] = useState('customer');
   const [formData, setFormData] = useState({ 
@@ -175,9 +170,14 @@ const Auth = ({ onLogin, onRegisterUser, onRegisterBusiness }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (isLogin) {
-      onLogin(formData.email.trim(), formData.password);
+      if (regType === 'business') {
+        onLoginBusiness(formData.email.trim(), formData.password);
+      } else {
+        onLogin(formData.email.trim(), formData.password);
+      }
     } else {
       if (regType === 'business') {
+        // Pass the entire object to strictly enforce correct JSON structure
         onRegisterBusiness(formData);
       } else {
         onRegisterUser(formData.name, formData.email.trim(), formData.password);
@@ -190,12 +190,10 @@ const Auth = ({ onLogin, onRegisterUser, onRegisterBusiness }) => {
       <div className="wizard-container" style={{margin:0, width:'100%', maxWidth:'460px'}}>
         <h2 style={{textAlign:'center', fontSize:'2.2rem', marginBottom:'1.5rem'}}>{isLogin ? 'ברוכים השבים' : 'הצטרפו אלינו'}</h2>
         
-        {!isLogin && (
-          <div className="tabs">
-            <button type="button" className={`tab ${regType === 'customer' ? 'active' : ''}`} onClick={() => setRegType('customer')}>אני לקוח</button>
-            <button type="button" className={`tab ${regType === 'business' ? 'active' : ''}`} onClick={() => setRegType('business')}>אני עסק</button>
-          </div>
-        )}
+        <div className="tabs">
+          <button type="button" className={`tab ${regType === 'customer' ? 'active' : ''}`} onClick={() => setRegType('customer')}>אני לקוח</button>
+          <button type="button" className={`tab ${regType === 'business' ? 'active' : ''}`} onClick={() => setRegType('business')}>אני עסק</button>
+        </div>
 
         <form onSubmit={handleSubmit}>
           {!isLogin && (
@@ -248,38 +246,105 @@ const App = () => {
     api.getAllBusinesses().then(setBusinesses).catch(console.error);
   }, []);
 
+  const safeFetch = async (endpoint, options) => {
+    const response = await fetch(endpoint, {
+      ...options,
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        ...options.headers,
+      }
+    });
+
+    let data;
+    try {
+      data = await response.json();
+    } catch (e) {
+      throw new Error(`שגיאת שרת: התקבל פורמט לא תקין מהנתיב ${endpoint}`);
+    }
+
+    if (!response.ok) {
+      throw new Error(data.message || data.errors?.join('\n') || 'פעולה נכשלה בשרת');
+    }
+    return data;
+  };
+
   const handleLogin = async (email, password) => {
     try {
-      const data = await api.login(email, password);
-      setUser(data.user); setToken(data.token);
-      localStorage.setItem('token', data.token);
+      const data = await safeFetch('/api/auth/user/login', {
+        method: 'POST',
+        body: JSON.stringify({ email, password }),
+      });
+      setUser(data.user); 
+      if (data.token) {
+        setToken(data.token);
+        localStorage.setItem('token', data.token);
+      }
       setView('home');
-    } catch (err) { alert("שגיאת התחברות: " + err.message); }
+    } catch (err) { alert("שגיאת התחברות:\n" + err.message); }
+  };
+
+  const handleLoginBusiness = async (email, password) => {
+    try {
+      const data = await safeFetch('/api/auth/business/login', {
+        method: 'POST',
+        body: JSON.stringify({ email, password }),
+      });
+      setUser(data.business);
+      if (data.token) {
+        setToken(data.token);
+        localStorage.setItem('token', data.token);
+      }
+      setView('home');
+    } catch (err) { alert("שגיאת התחברות עסק:\n" + err.message); }
   };
 
   const handleRegisterUser = async (name, email, password) => {
     try {
-      const data = await api.register(name, email, password);
-      setUser(data.user); setToken(data.token);
-      localStorage.setItem('token', data.token);
+      const data = await safeFetch('/api/auth/user/register', {
+        method: 'POST',
+        body: JSON.stringify({ name, email, password }),
+      });
+      setUser(data.user); 
+      if (data.token) {
+        setToken(data.token);
+        localStorage.setItem('token', data.token);
+      }
       setView('home');
-    } catch (err) { 
-      const msg = err.errors ? err.errors.join("\n") : err.message;
-      alert("שגיאת הרשמה:\n" + msg); 
-    }
+    } catch (err) { alert("שגיאת הרשמה:\n" + err.message); }
   };
 
-  const handleRegisterBusiness = async (data) => {
+  // 🛡️ Bypass api.js for business registration to explicitly format the required object
+  const handleRegisterBusiness = async (formData) => {
     try {
-      const res = await api.registerBusiness(data);
-      setUser(res.business); setToken(res.token);
-      localStorage.setItem('token', res.token);
+      const payload = {
+        name: formData.name,
+        email: formData.email,
+        password: formData.password,
+        category: formData.category,
+        address: formData.address,
+      };
+
+      const response = await fetch('/api/auth/business/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      console.log(JSON.stringify(payload))
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.message || data.errors?.join('\n') || 'פעולה נכשלה בשרת');
+      }
+
+      setUser(data.business); 
+      if (data.token) {
+        setToken(data.token);
+        localStorage.setItem('token', data.token);
+      }
       alert("העסק נוצר בהצלחה!");
       setView('home');
-    } catch (err) { 
-      const msg = err.errors ? err.errors.join("\n") : err.message;
-      alert("שגיאת אימות עסק:\n" + msg); 
-    }
+    } catch (err) { alert("שגיאת אימות עסק:\n" + err.message); }
   };
 
   return (
@@ -307,7 +372,12 @@ const App = () => {
           </div>
         </div>
       )}
-      {view === 'login' && <Auth onLogin={handleLogin} onRegisterUser={handleRegisterUser} onRegisterBusiness={handleRegisterBusiness} />}
+      {view === 'login' && <Auth 
+        onLogin={handleLogin} 
+        onLoginBusiness={handleLoginBusiness} 
+        onRegisterUser={handleRegisterUser} 
+        onRegisterBusiness={handleRegisterBusiness} 
+      />}
     </div>
   );
 };

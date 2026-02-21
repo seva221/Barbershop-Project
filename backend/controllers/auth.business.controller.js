@@ -28,6 +28,8 @@ export const registerBusiness = async (req, res) => {
       passwordHash,
     });
 
+    // need to assign owner id somewhere
+    
     // Generate JWT
     const token = jwt.sign(
       {

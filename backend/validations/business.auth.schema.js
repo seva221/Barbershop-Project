@@ -8,10 +8,11 @@ const objectId = z.string().refine(
 
 export const registerBusinessSchema = z.object({
   name: z.string().min(2),
-  ownerId: objectId,
+  ownerId: objectId.optional(), // NEED TO ALLOCATE AFTER CREATION
   category: z.string().optional(),
   email: z.string().email(),
   password: z.string().min(6),
+  address: z.string().optional(),
 });
 
 export const loginBusinessSchema = z.object({

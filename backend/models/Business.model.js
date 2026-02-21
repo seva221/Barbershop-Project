@@ -12,7 +12,7 @@ const businessSchema = new mongoose.Schema(
     ownerId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
-      required: true,
+      required: false, // MUST ADD AFTER A BUSINESS IS REGISTERED
       unique: true,
     },
 
