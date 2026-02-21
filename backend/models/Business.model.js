@@ -10,11 +10,11 @@ const businessSchema = new mongoose.Schema(
     },
 
     ownerId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: false, // MUST ADD AFTER A BUSINESS IS REGISTERED
-      unique: true,
-    },
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    unique: true,
+    sparse: true // <--- זה הפתרון! מאפשר כפל של ערכי null
+   },
 
     category: {
       type: String,
