@@ -104,6 +104,7 @@ body {
 .btn-primary {
   background-color: var(--primary);
   color: white;
+  margin-left: 20px;
 }
 
 .btn-primary:hover {
