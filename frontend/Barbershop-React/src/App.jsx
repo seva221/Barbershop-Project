@@ -233,10 +233,53 @@ const Auth = ({ onLogin, onLoginBusiness, onRegisterUser, onRegisterBusiness }) 
           <button type="button" style={{flex:1, padding:'0.6rem', border:'none', borderRadius:'9px', cursor:'pointer', fontWeight:600, background: regType === 'business' ? 'white' : 'transparent'}} onClick={() => setRegType('business')}>עסק</button>
         </div>
         <form onSubmit={handleSubmit}>
-          {!isLogin && <input className="input-field" placeholder={regType === 'business' ? "שם העסק" : "שם מלא"} value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} required />}
-          <input className="input-field" type="email" placeholder="אימייל" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} required />
-          <input className="input-field" type="password" placeholder="סיסמה" value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} required />
-          <button className="btn btn-primary" type="submit">{isLogin ? 'כניסה למערכת' : 'הרשמה עכשיו'}</button>
+            {!isLogin && (
+                <input 
+                    className="input-field" 
+                    placeholder={regType === 'business' ? "שם העסק" : "שם מלא"} 
+                    value={formData.name} 
+                    onChange={e => setFormData({...formData, name: e.target.value})} 
+                    required 
+                />
+             )}
+            
+            {!isLogin && regType === 'business' && (
+            <select className="input-field" value={formData.serviceType || ''} onChange={e => setFormData({...formData, serviceType: e.target.value})} required>
+              <option value="" disabled>בחר סוג שירות...</option>
+              <option value="מספרה">מספרה</option>
+              <option value="מכון יופי">מכון יופי וקוסמטיקה</option>
+              <option value="ספא">ספא ועיסוי</option>
+            </select>
+            )}
+            <input 
+                className="input-field" 
+                type="email" 
+                placeholder="אימייל" 
+                value={formData.email} 
+                onChange={e => setFormData({...formData, email: e.target.value})} 
+                required 
+            />
+            <input 
+                className="input-field" 
+                type="password" 
+                placeholder="סיסמה" 
+                value={formData.password} 
+                onChange={e => setFormData({...formData, password: e.target.value})} 
+                required 
+            />
+            {!isLogin && regType === 'business' && (
+            <input 
+                className="input-field" 
+                type="text" 
+                placeholder="כתובת" 
+                value={formData.address} 
+                onChange={e => setFormData({...formData, address: e.target.value})} 
+                required 
+            />
+            )}
+            <button className="btn btn-primary" type="submit">
+                {isLogin ? 'כניסה למערכת' : 'הרשמה עכשיו'}
+            </button>
         </form>
         <button onClick={() => setIsLogin(!isLogin)} style={{background:'none', border:'none', color:'var(--accent)', fontWeight:'800', cursor:'pointer', textDecoration:'underline', width:'100%', marginTop:'1.5rem'}}>{isLogin ? 'אין לך חשבון? הירשם כאן' : 'כבר רשום? התחבר למערכת'}</button>
       </div>
