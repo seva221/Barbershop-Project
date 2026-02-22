@@ -140,12 +140,13 @@ const Navbar = ({ user, setView, onLogout }) => (
 
 
 const AdminDashboard = ({ user, appointments = [], onStatusUpdate, onApprove }) => {
+  const businessId = user?._id || user?.id || '';
   // --- States ---
   const [isModalOpen, setIsModalOpen] = useState(false); // למודל שירות
   const [serviceData, setServiceData] = useState({ name: '', duration: '', price: '' });
   
   const [isWorkerModalOpen, setIsWorkerModalOpen] = useState(false); // למודל עובד
-  const [workerData, setWorkerData] = useState({ name: '', phone: '', businessId: user._id });
+  const [workerData, setWorkerData] = useState({ name: '', phone: '', businessId: businessId });
   
   // --- Handlers ---
   
@@ -157,7 +158,7 @@ const AdminDashboard = ({ user, appointments = [], onStatusUpdate, onApprove }) 
         name: serviceData.name,
         duration: Number(serviceData.duration),
         price: Number(serviceData.price),
-        businessId: user?._id 
+        businessId: businessId 
       };
 
       await api.createService(payload, user?.token); 
@@ -177,7 +178,7 @@ const AdminDashboard = ({ user, appointments = [], onStatusUpdate, onApprove }) 
       const payload = {
         name: workerData.name,
         phone: workerData.phone,
-        businessId: user?._id
+        businessId: businessId
         // הערה: אם תוסיף בעתיד תמיכה בשרת ל"התמחויות", תוכל להעביר גם את:
         // specialties: workerData.specialties
       };
@@ -552,18 +553,18 @@ const App = () => {
     }
   
     try {
+      const currentUserId = user?._id || user?.id;
       // 1. קריאה לשרת כדי להביא את פרטי המשתמש המלאים (כולל טלפון)
-      const fetchedUser = await api.getUser(user._id, token);
+      const fetchedUser = await api.getUser(currentUserId, token);
       
       // 2. בניית האובייקט לשליחה לפי מה ש-Zod דורש
       const payload = { 
         businessId: bookingBusiness._id, 
         ...bookingForm, 
-        customerId: user._id,
+        customerId: currentUserId,
         guestDetails: {
           name: fetchedUser.name,
-          // ודא שהשרת אכן מחזיר phone, אם לא - שים ערך ברירת מחדל כדי ש-Zod לא יקרוס
-          phone: fetchedUser.phone || "לא הוזן טלפון" 
+          phone: fetchedUser.phone || "0000000000" 
         }
       };
   
