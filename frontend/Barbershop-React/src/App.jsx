@@ -140,109 +140,172 @@ const Navbar = ({ user, setView, onLogout }) => (
 
 
 const AdminDashboard = ({ user, appointments = [], onStatusUpdate, onApprove }) => {
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [serviceData, setServiceData] = useState({ name: '', duration: '', price: '', businessId: user?._id});
+  // --- States ---
+  const [isModalOpen, setIsModalOpen] = useState(false); // למודל שירות
+  const [serviceData, setServiceData] = useState({ name: '', duration: '', price: '' });
   
-  // פונקציה לטיפול בשליחת הטופס
+  const [isWorkerModalOpen, setIsWorkerModalOpen] = useState(false); // למודל עובד
+  const [workerData, setWorkerData] = useState({ name: '', phone: '', businessId: user._id });
+  
+  // --- Handlers ---
+  
+  // פונקציה להוספת שירות
   const handleAddService = async (e) => {
     e.preventDefault();
     try {
-      // המרת הנתונים למספרים כדי למנוע שגיאות ולידציה בשרת (Zod)
       const payload = {
         name: serviceData.name,
         duration: Number(serviceData.duration),
         price: Number(serviceData.price),
-        businessId: serviceData.businessId
+        businessId: user?._id 
       };
 
       await api.createService(payload, user?.token); 
-      
-        
       alert('השירות נוסף בהצלחה!');
-      setIsModalOpen(false); // סגירת המודל
-      setServiceData({ name: '', duration: '', price: '' }); // איפוס הטופס
-        
-      // כאן כדאי להוסיף קריאה לפונקציה שמרעננת את רשימת השירותים במסך
-        
+      setIsModalOpen(false);
+      setServiceData({ name: '', duration: '', price: '' });
     } catch (error) {
-      // Changed console errors to English for better debugging
       console.error("Failed to add service. Error details:", error);
-      if (error.errors) {
-         console.error("Validation errors from server:", error.errors);
-      }
-      
       alert('שגיאה בהוספת השירות, אנא נסה שוב.');
+    }
+  };
+
+  // פונקציה להוספת עובד
+  const handleAddWorker = async (e) => {
+    e.preventDefault();
+    try {
+      const payload = {
+        name: workerData.name,
+        phone: workerData.phone,
+        businessId: user?._id
+        // הערה: אם תוסיף בעתיד תמיכה בשרת ל"התמחויות", תוכל להעביר גם את:
+        // specialties: workerData.specialties
+      };
+
+      await api.createWorker(payload, user?.token); 
+      alert('העובד נוסף בהצלחה!');
+      setIsWorkerModalOpen(false);
+      setWorkerData({ name: '', phone: '', businessId: '' });
+    } catch (error) {
+      console.error("Failed to add worker. Error details:", error);
+      alert('שגיאה בהוספת העובד, אנא נסה שוב.');
+    }
+  };
+
+  // פונקציית עזר לסגירת מודלים בלחיצה על הרקע (האזור הכהה)
+  const handleOverlayClick = (e, setter) => {
+    if (e.target === e.currentTarget) {
+      setter(false);
     }
   };
 
   return (
   <div className="container fade-in" style={{padding:'3rem 0'}}>
+    
+    {/* --- Header & Buttons --- */}
     <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'2rem'}}>
-        <h1 style={{fontSize:'2.5rem'}}>לוח ניהול {user?.name} {Icons?.Chart}</h1>
-        <button className="btn btn-primary" 
-        style={{width:'auto'}}
-        onClick={() => setIsModalOpen(true)}>
-        + הוסף שירות
-        </button>
+        <h1 style={{fontSize:'2.5rem'}}>לוח ניהול {user?.name} {/* {Icons?.Chart} */}</h1>
+        
+        <div style={{display: 'flex', gap: '1rem'}}>
+          <button 
+            className="btn" 
+            style={{backgroundColor: '#10b981', color: 'white', width:'auto', fontWeight: 'bold', padding: '0.8rem 1.5rem', borderRadius: '8px'}}
+            onClick={() => setIsWorkerModalOpen(true)}>
+            + הוסף עובד
+          </button>
+          <button 
+            className="btn" 
+            style={{backgroundColor: '#0f172a', color: 'white', width:'auto', fontWeight: 'bold', padding: '0.8rem 1.5rem', borderRadius: '8px'}}
+            onClick={() => setIsModalOpen(true)}>
+            + הוסף שירות
+          </button>
+        </div>
     </div>
     
-    {isModalOpen && (
-    <div style={{
-        position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, 
-        backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', 
-        justifyContent: 'center', alignItems: 'center', zIndex: 1000
+    {/* --- מודל הוספת עובד --- */}
+    {isWorkerModalOpen && (
+    <div 
+        onClick={(e) => handleOverlayClick(e, setIsWorkerModalOpen)}
+        style={{
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, 
+            backgroundColor: 'rgba(0,0,0,0.4)', display: 'flex', 
+            justifyContent: 'center', alignItems: 'center', zIndex: 1000
     }}>
         <div style={{
-            backgroundColor: 'white', padding: '2rem', borderRadius: '8px', 
-            width: '90%', maxWidth: '400px', textAlign: 'right'
+            backgroundColor: 'white', padding: '2.5rem', borderRadius: '16px', 
+            width: '90%', maxWidth: '900px', textAlign: 'right',
+            boxShadow: '0 10px 25px rgba(0,0,0,0.1)'
         }}>
-            <h2 style={{marginTop: 0, marginBottom: '1.5rem'}}>הוספת שירות חדש</h2>
-            
-            <form onSubmit={handleAddService}>
+            <h2 style={{marginTop: 0, marginBottom: '2rem', fontSize: '1.2rem', fontWeight: 'bold'}}>הוספת עובד חדש</h2>
+            <form onSubmit={handleAddWorker} style={{display: 'flex', flexDirection: 'column', gap: '1rem'}}>
                 <input 
-                    className="input-field" 
-                    type="text" 
-                    placeholder="שם השירות" 
-                    value={serviceData.name} 
-                    onChange={e => setServiceData({...serviceData, name: e.target.value})} 
-                    required 
-                    style={{marginBottom: '1rem', width: '100%', boxSizing: 'border-box'}}
+                    className="input-field" type="text" placeholder="שם העובד" 
+                    value={workerData.name} onChange={e => setWorkerData({...workerData, name: e.target.value})} required 
+                    style={{width: '100%', boxSizing: 'border-box', padding: '1rem', borderRadius: '8px', border: '1px solid #e2e8f0'}} 
                 />
                 <input 
-                    className="input-field" 
-                    type="number" 
-                    placeholder="זמן (בדקות)" 
-                    value={serviceData.duration} 
-                    onChange={e => setServiceData({...serviceData, duration: e.target.value})} 
-                    required 
-                    style={{marginBottom: '1rem', width: '100%', boxSizing: 'border-box'}}
-                />
-                <input 
-                    className="input-field" 
-                    type="number" 
-                    placeholder="מחיר" 
-                    value={serviceData.price} 
-                    onChange={e => setServiceData({...serviceData, price: e.target.value})} 
-                    required 
-                    style={{marginBottom: '1.5rem', width: '100%', boxSizing: 'border-box'}}
+                    className="input-field" type="text" placeholder="טלפון" 
+                    value={workerData.phone} onChange={e => setWorkerData({...workerData, phone: e.target.value})} required 
+                    style={{width: '100%', boxSizing: 'border-box', padding: '1rem', borderRadius: '8px', border: '1px solid #e2e8f0'}} 
                 />
                 
-                <div style={{display: 'flex', gap: '1rem'}}>
-                    <button className="btn btn-primary" type="submit" style={{flex: 1}}>
-                        שמור שירות
-                    </button>
-                    <button 
-                        className="btn" 
-                        type="button" 
-                        onClick={() => setIsModalOpen(false)}
-                        style={{flex: 1, backgroundColor: '#e0e0e0', color: '#333'}}>
-                        ביטול
-                    </button>
-                </div>
+                <button type="submit" style={{
+                    width: '100%', backgroundColor: '#10b981', color: 'white', 
+                    padding: '1rem', borderRadius: '8px', border: 'none', 
+                    fontWeight: 'bold', fontSize: '1rem', marginTop: '1rem', cursor: 'pointer'
+                }}>
+                    שמור עובד
+                </button>
             </form>
         </div>
     </div>
     )}
+
+    {/* --- מודל הוספת שירות --- */}
+    {isModalOpen && (
+    <div 
+        onClick={(e) => handleOverlayClick(e, setIsModalOpen)}
+        style={{
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, 
+            backgroundColor: 'rgba(0,0,0,0.4)', display: 'flex', 
+            justifyContent: 'center', alignItems: 'center', zIndex: 1000
+    }}>
+        <div style={{
+            backgroundColor: 'white', padding: '2.5rem', borderRadius: '16px', 
+            width: '90%', maxWidth: '900px', textAlign: 'right',
+            boxShadow: '0 10px 25px rgba(0,0,0,0.1)'
+        }}>
+            <h2 style={{marginTop: 0, marginBottom: '2rem', fontSize: '1.2rem', fontWeight: 'bold'}}>הוספת שירות חדש</h2>
+            <form onSubmit={handleAddService} style={{display: 'flex', flexDirection: 'column', gap: '1rem'}}>
+                <input 
+                    className="input-field" type="text" placeholder="שם השירות (לדוגמה: תספורת גברים)" 
+                    value={serviceData.name} onChange={e => setServiceData({...serviceData, name: e.target.value})} required 
+                    style={{width: '100%', boxSizing: 'border-box', padding: '1rem', borderRadius: '8px', border: '1px solid #e2e8f0'}} 
+                />
+                <input 
+                    className="input-field" type="number" placeholder="מחיר (₪)" 
+                    value={serviceData.price} onChange={e => setServiceData({...serviceData, price: e.target.value})} required 
+                    style={{width: '100%', boxSizing: 'border-box', padding: '1rem', borderRadius: '8px', border: '1px solid #e2e8f0'}} 
+                />
+                <input 
+                    className="input-field" type="number" placeholder="משך זמן (בדקות)" 
+                    value={serviceData.duration} onChange={e => setServiceData({...serviceData, duration: e.target.value})} required 
+                    style={{width: '100%', boxSizing: 'border-box', padding: '1rem', borderRadius: '8px', border: '1px solid #e2e8f0'}} 
+                />
+                
+                <button type="submit" style={{
+                    width: '100%', backgroundColor: '#0f172a', color: 'white', 
+                    padding: '1rem', borderRadius: '8px', border: 'none', 
+                    fontWeight: 'bold', fontSize: '1rem', marginTop: '1rem', cursor: 'pointer'
+                }}>
+                    שמור שירות
+                </button>
+            </form>
+        </div>
+    </div>
+    )}
+
+    {/* --- שאר הדשבורד --- */}
     <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(240px, 1fr))', gap:'1.5rem', marginBottom:'3rem'}}>
       <div className="card" style={{padding: '2rem', textAlign:'center'}}>
         <div style={{color:'var(--text-muted)'}}>תורים היום</div>
@@ -254,14 +317,15 @@ const AdminDashboard = ({ user, appointments = [], onStatusUpdate, onApprove }) 
       </div>
       <div className="card" style={{padding: '2rem', textAlign:'center'}}>
         <div style={{color:'var(--text-muted)'}}>דירוג ממוצע</div>
-        <div style={{fontSize:'2.5rem', fontWeight:900}}>4.9 {Icons?.Star}</div>
+        <div style={{fontSize:'2.5rem', fontWeight:900}}>4.9 {/* {Icons?.Star} */}</div>
       </div>
     </div>
+    
     <div className="card">
         <h3 style={{padding:'1.5rem', marginBottom:0}}>ניהול יומן תורים</h3>
         <table style={{width:'100%', borderCollapse:'collapse'}}>
             <thead>
-            <tr style={{textAlign:'right', borderBottom:'2px solid var(--bg)'}}>
+            <tr style={{textAlign:'right', borderBottom:'2px solid #e2e8f0'}}>
                 <th style={{padding:'1rem'}}>לקוח</th>
                 <th style={{padding:'1rem'}}>שעה</th>
                 <th style={{padding:'1rem'}}>שירות</th>
@@ -270,14 +334,14 @@ const AdminDashboard = ({ user, appointments = [], onStatusUpdate, onApprove }) 
             </thead>
             <tbody>
             {appointments?.map(app => (
-                <tr key={app._id} style={{borderBottom:'1px solid var(--bg)'}}>
+                <tr key={app._id} style={{borderBottom:'1px solid #f8fafc'}}>
                 <td style={{padding:'1rem', fontWeight:700}}>{app.userId?.name || 'אורח'}</td>
                 <td style={{padding:'1rem'}}>{app.time}</td>
                 <td style={{padding:'1rem'}}>{app.serviceId?.name || 'תספורת גברים'}</td>
                 <td style={{padding:'1rem'}}>
                   <div style={{display:'flex', gap:'5px'}}>
-                    <button className="btn" style={{padding:'0.4rem', background:'#dcfce7'}} onClick={() => onApprove(app._id)} title="אשר תור">{Icons?.Check}</button>
-                    <button className="btn" style={{padding:'0.4rem', background:'#fee2e2'}} onClick={() => onStatusUpdate(app._id)} title="דחה תור">{Icons?.X}</button>
+                    <button className="btn" style={{padding:'0.4rem', background:'#dcfce7'}} onClick={() => onApprove(app._id)} title="אשר תור">✓</button>
+                    <button className="btn" style={{padding:'0.4rem', background:'#fee2e2'}} onClick={() => onStatusUpdate(app._id)} title="דחה תור">✕</button>
                   </div>
                 </td>
                 </tr>
@@ -287,6 +351,7 @@ const AdminDashboard = ({ user, appointments = [], onStatusUpdate, onApprove }) 
     </div>
   </div>)
 };
+
 const UserProfile = ({ user, appointments, onCancel }) => (
   <div className="container fade-in" style={{padding:'3rem 0'}}>
     <h1 style={{marginBottom:'2rem'}}>התורים שלי {Icons.Calendar}</h1>
@@ -474,7 +539,7 @@ const App = () => {
   const handleConfirmBooking = async () => {
     if (!bookingForm.serviceId || !bookingForm.date || !bookingForm.time) return alert("בחר שירות, תאריך ושעה");
     try {
-        await api.createAppointment({ businessId: bookingBusiness._id, ...bookingForm }, token);
+        await api.createAppointment({ businessId: bookingBusiness._id, ...bookingForm, customerId: user._id}, token);
         alert("תור נקבע בהצלחה!");
         setBookingBusiness(null);
         setView('profile');

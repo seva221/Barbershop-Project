@@ -137,3 +137,15 @@ export const deleteAppointment = async (appointmentId, token) => {
   return handleResponse(response);
 };
 
+// יצירת עובד חדש
+export const createWorker = async (workerData, token) => {
+  const response = await fetch(`${BASE_URL}/resources/workers`, {
+    method: 'POST',
+    headers: { 
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}` 
+    },
+    body: JSON.stringify(workerData),
+  });
+  return handleResponse(response);
+};
