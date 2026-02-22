@@ -3,11 +3,19 @@ import authMiddleware from "../middleware/auth.middleware.js"
 
 import { 
   createAppointment, 
-  deleteAppointment 
+  deleteAppointment,
+  getAppointments,
+  updateAppointment 
 } from "../controllers/booking.controller.js";
 
 const router = express.Router();
 
+router.get("/", authMiddleware, getAppointments);
+router.post("/", authMiddleware, createAppointment);
+// PUT /api/booking/:id
+router.put("/:id", authMiddleware, updateAppointment);
+// DELETE /api/booking/:id
+router.delete("/:id", authMiddleware, deleteAppointment);
 
 // the middleware handles JWT confirmation
 // if none or incorrect -> reject (400, 401) 

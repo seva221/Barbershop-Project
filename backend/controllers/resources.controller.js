@@ -4,6 +4,38 @@ import {
   createWorkerSchema,
   createServiceSchema,
 } from "../validations/resources.schema.js";
+import Business from "../models/Business.model.js"; 
+
+/* =========================
+   BUSINESS CONTROLLERS (NEW)
+========================= */
+
+// Fetches all approved businesses for the frontend home page grid
+export const getAllBusinesses = async (req, res) => {
+  try {
+    const businesses = await Business.find({}).select("-passwordHash");
+    return res.status(200).json(businesses);
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+// Fetches workers and services for a specific business booking modal
+export const getBusinessData = async (req, res) => {
+  try {
+    const { businessId } = req.query;
+    if (!businessId) {
+      return res.status(400).json({ message: "businessId query parameter is required" });
+    }
+
+    const services = await Service.find({ businessId });
+    const workers = await Worker.find({ businessId });
+
+    return res.status(200).json({ services, workers });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
 
 /* =========================
    WORKER CONTROLLERS

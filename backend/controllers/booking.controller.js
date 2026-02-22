@@ -2,6 +2,41 @@ import mongoose from "mongoose";
 import Appointment from "../models/Appointment.model.js";
 import { createBookingSchema } from "../validations/booking.schema.js";
 
+export const getAppointments = async (req, res) => {
+  try {
+    // req.user is populated by your authMiddleware
+    const { id, role, businessId } = req.user; 
+    let query = {};
+
+    if (role === "business") {
+      query = { businessId: businessId || id };
+    } else {
+      query = { customerId: id };
+    }
+
+    const appointments = await Appointment.find(query)
+      .populate("businessId", "name address")
+      .populate("serviceId", "name price")
+      .populate("workerId", "name")
+      .populate("customerId", "name email");
+
+    return res.status(200).json(appointments);
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+// Required for the Admin dashboard to approve/reject
+export const updateAppointment = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const appointment = await Appointment.findByIdAndUpdate(id, req.body, { new: true });
+    return res.status(200).json({ success: true, appointment });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
 export const createAppointment = async (req, res) => {
   const session = await mongoose.startSession();
   session.startTransaction();

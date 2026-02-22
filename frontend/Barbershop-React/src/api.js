@@ -1,7 +1,7 @@
 // src/api.js
 
 // במקום רק '/api'
-const BASE_URL = 'http://localhost:5173/api';
+const BASE_URL = '/api';
 
 /**
  * פונקציית עזר לניהול תגובות מהשרת - מחלצת שגיאות Zod מפורטות

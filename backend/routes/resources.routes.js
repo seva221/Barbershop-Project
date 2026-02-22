@@ -4,13 +4,20 @@ import {
   createWorker, 
   getWorkers, 
   createService, 
-  getServices 
+  getServices,
+  getAllBusinesses, // <-- Add this
+  getBusinessData   // <-- Add this
 } from "../controllers/resources.controller.js";
 
 const router = express.Router();
+// Businesse *data* !!!
+router.get("/businesses", getAllBusinesses);
+
+// GET /api/resources?businessId=...
+router.get("/", getBusinessData);
+
 
 // Workers
-
 // the middleware handles JWT confirmation
 // if none or incorrect -> reject (400, 401) 
 router.post("/workers",authMiddleware, createWorker); // Create
