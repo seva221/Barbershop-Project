@@ -346,6 +346,26 @@ const App = () => {
       } catch (err) { alert(err.message); }
     }
   };
+  const handleRegisterUser = async (name, email, password) => {
+  try {
+    const data = await api.register(name, email, password);
+    alert("נרשמת בהצלחה!");
+    setUser(data.user);
+    setView("home");
+  } catch (err) {
+    alert(err.message);
+  }
+};
+
+const handleRegisterBusiness = async (formData) => {
+  try {
+    const data = await api.registerBusiness(formData);
+    alert("העסק נרשם בהצלחה! בדוק מייל לאימות.");
+    setView("login");
+  } catch (err) {
+    alert(err.message);
+  }
+};
 
   return (
     <div style={{minHeight:'100vh', background:'var(--bg)'}}>
@@ -422,7 +442,7 @@ const App = () => {
 
       {view === 'admin' && user?.role === 'business' && <AdminDashboard user={user} appointments={appointments} onStatusUpdate={handleCancelAppointment} onApprove={(id) => alert('התור אושר!')} />}
       {view === 'profile' && user && <UserProfile user={user} appointments={appointments} onCancel={handleCancelAppointment} />}
-      {view === 'login' && <Auth onLogin={handleLogin} onLoginBusiness={handleLoginBusiness} onRegisterUser={() => {}} onRegisterBusiness={() => {}} />}
+      {view === 'login' && <Auth onLogin={handleLogin} onLoginBusiness={handleLoginBusiness} onRegisterUser={handleRegisterUser} onRegisterBusiness={handleRegisterBusiness} />}
     </div>
   );
 };
