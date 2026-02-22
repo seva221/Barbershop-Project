@@ -16,7 +16,7 @@ const createCookie = (res, token) => {
 
 export const registerUser = async (req, res) => {
   try {
-    const { name, email, password } = registerSchema.parse(req.body);
+    const { name, email, password, phone } = registerSchema.parse(req.body);
     const exists = await User.findOne({ email });
     if (exists) return res.status(409).json({ message: "Email already exists" });
 
@@ -25,6 +25,7 @@ export const registerUser = async (req, res) => {
       name,
       email,
       passwordHash,
+      phone,
       role: "customer",
       businessId: null,
     });
@@ -64,7 +65,7 @@ export const loginUser = async (req, res) => {
     res.status(200).json({ 
       message: "Logged in successfully",
       token, 
-      user: { id: user._id, name: user.name, email: user.email, role: user.role } 
+      user: { id: user._id, name: user.name, email: user.email, role: user.role, phone: user.phone } 
     });
 
   } catch (err) {

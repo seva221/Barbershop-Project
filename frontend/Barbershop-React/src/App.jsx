@@ -376,7 +376,7 @@ const UserProfile = ({ user, appointments, onCancel }) => (
 const Auth = ({ onLogin, onLoginBusiness, onRegisterUser, onRegisterBusiness }) => {
   const [isLogin, setIsLogin] = useState(true);
   const [regType, setRegType] = useState('customer');
-  const [formData, setFormData] = useState({ name: '', email: '', password: '', address: '', category: 'Barbershop' });
+  const [formData, setFormData] = useState({ name: '', email: '', password: '', address: '', phone: '', category: 'Barbershop' });
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -432,6 +432,16 @@ const Auth = ({ onLogin, onLoginBusiness, onRegisterUser, onRegisterBusiness }) 
                 onChange={e => setFormData({...formData, password: e.target.value})} 
                 required 
             />
+            {!isLogin && regType === 'customer' && (
+            <input 
+                className="input-field" 
+                type="phone" 
+                placeholder="טלפון" 
+                value={formData.phone} 
+                onChange={e => setFormData({...formData, phone: e.target.value})} 
+                required 
+            />
+            )}
             {!isLogin && regType === 'business' && (
             <input 
                 className="input-field" 
