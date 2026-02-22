@@ -8,7 +8,7 @@ export default defineConfig({
   server: {
     proxy: { // allows access from local calls, fetch(http://localhost:4000/api/...) -> fetch("/api/...")
       '/api': {
-        target: 'http://localhost:4000', // backend URL
+        target: 'http://localhost:5000', // backend URL
         changeOrigin: true,
         secure: false,
       },
