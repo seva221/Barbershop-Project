@@ -4,6 +4,16 @@ import jwt from 'jsonwebtoken';
 import User from '../models/user.model.js';
 import { registerSchema, loginSchema } from '../validations/auth.schema.js'; // וודא שיש לך סכמה כזו
 
+const createCookie = (res, token) => {
+  res.cookie("token", token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+  });
+  return res
+};
+
 export const registerUser = async (req, res) => {
   try {
     const { name, email, password } = registerSchema.parse(req.body);
@@ -20,7 +30,7 @@ export const registerUser = async (req, res) => {
     });
 
     const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: "7d" });
-    res.cookie("token", token, { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "strict", maxAge: 7 * 24 * 60 * 60 * 1000 });
+    res = createCookie(res, token);
     res.status(201).json({ user, token }); // הוספתי token גם ב-json לנוחות ה-Frontend
   } catch (err) {
     if (err.name === "ZodError") return res.status(400).json({ message: "Validation failed", errors: err.issues.map(e => e.message) });
@@ -49,12 +59,7 @@ export const loginUser = async (req, res) => {
       { expiresIn: "7d" }
     );
 
-    res.cookie("token", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    });
+    res = createCookie(res, token);
 
     res.status(200).json({ 
       message: "Logged in successfully",

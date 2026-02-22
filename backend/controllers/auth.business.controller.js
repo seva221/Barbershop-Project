@@ -4,6 +4,16 @@ import { ZodError } from "zod";
 import { registerBusinessSchema, loginBusinessSchema } from "../validations/business.auth.schema.js";
 import Business from "../models/Business.model.js";
 
+const createCookie = (res, token) => {
+  res.cookie("token", token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+  });
+  return res
+}
+
 /* ========================= REGISTER BUSINESS ========================= */
 export const registerBusiness = async (req, res) => {
   try {
@@ -41,17 +51,12 @@ export const registerBusiness = async (req, res) => {
       { expiresIn: "7d" }
     );
 
-    // Prepare response
+    // Prepare the business to be packaged in the response
     const businessResponse = business.toObject();
     delete businessResponse.passwordHash;
 
     // Set HTTP-only cookie
-    res.cookie("token", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    });
+    res = createCookie(res, token);
 
     res.status(201).json({
       message: "Business registered successfully",
@@ -98,17 +103,12 @@ export const loginBusiness = async (req, res) => {
       { expiresIn: "7d" }
     );
 
-    // Prepare response
+    // Prepare the business to be packaged in the response
     const businessResponse = business.toObject();
     delete businessResponse.passwordHash;
 
     // Set HTTP-only cookie
-    res.cookie("token", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    });
+    res = createCookie(res, token);
 
     res.status(200).json({
       message: "Business login successful",
