@@ -353,12 +353,33 @@ const AdminDashboard = ({ user, appointments = [], onStatusUpdate, onApprove }) 
   </div>)
 };
 
-const UserProfile = ({ user, appointments, onCancel }) => (
+const UserProfile = ({ user, appointments, onCancel, onReschedule }) => {
+  // סטייט כדי לדעת איזה תור אנחנו עורכים עכשיו, ואת התאריך החדש
+  const [editingId, setEditingId] = useState(null);
+  const [newDate, setNewDate] = useState('');
+
+  const handleSaveReschedule = () => {
+    if (!newDate) return alert("אנא בחר תאריך חדש");
+    
+    // שדה type="date" מחזיר YYYY-MM-DD. נהפוך את זה ל-DD/MM/YYYY:
+    const [year, month, day] = newDate.split('-');
+    const formattedDate = `${day}/${month}/${year}`;
+    
+    // קריאה לפונקציה שמועברת מ-App
+    onReschedule(editingId, formattedDate);
+    
+    // סגירת מצב העריכה
+    setEditingId(null);
+    setNewDate('');
+  };
+
+  return (
   <div className="container fade-in" style={{padding:'3rem 0'}}>
     <h1 style={{marginBottom:'2rem'}}>התורים שלי {Icons.Calendar}</h1>
     <div style={{display:'grid', gap:'1.5rem'}}>
       {appointments.map(app => (
-        <div key={app._id} className="card" style={{display:'flex', justifyContent:'space-between', alignItems:'center', padding:'1.5rem'}}>
+        <div key={app._id} className="card" style={{display:'flex', justifyContent:'space-between', alignItems:'center', padding:'1.5rem', flexWrap: 'wrap', gap: '1rem'}}>
+          
           <div style={{display:'flex', gap:'1.5rem', alignItems:'center'}}>
             <div style={{background:'var(--accent-soft)', padding:'1.2rem', borderRadius:'20px', fontSize:'1.8rem'}}>{Icons.Clock}</div>
             <div>
@@ -366,13 +387,45 @@ const UserProfile = ({ user, appointments, onCancel }) => (
               <div style={{color:'var(--text-muted)'}}>{app.date} | בשעה {app.time}</div>
             </div>
           </div>
-          <button className="btn btn-danger" style={{width:'auto'}} onClick={() => onCancel(app._id)}>{Icons.Trash} ביטול תור</button>
+
+          <div>
+            {/* אם אנחנו במצב עריכה על התור הזה, נציג את האינפוט */}
+            {editingId === app._id ? (
+              <div style={{display: 'flex', gap: '0.5rem', alignItems: 'center'}}>
+                <input 
+                  type="date" 
+                  className="input-field" 
+                  style={{marginBottom: 0, width: 'auto'}} 
+                  value={newDate} 
+                  onChange={e => setNewDate(e.target.value)} 
+                />
+                <button className="btn btn-primary" style={{padding: '0.8rem 1rem'}} onClick={handleSaveReschedule}>
+                  {Icons.Check} שמור
+                </button>
+                <button className="btn" style={{padding: '0.8rem 1rem', background: '#e2e8f0'}} onClick={() => {setEditingId(null); setNewDate('');}}>
+                  {Icons.X}
+                </button>
+              </div>
+            ) : (
+              /* אם אנחנו לא בעריכה, נציג את הכפתורים הרגילים */
+              <div style={{display: 'flex', gap: '0.5rem'}}>
+                <button className="btn btn-primary" style={{width:'auto', background: 'var(--accent)'}} onClick={() => setEditingId(app._id)}>
+                  שינוי מועד
+                </button>
+                <button className="btn btn-danger" style={{width:'auto'}} onClick={() => onCancel(app._id)}>
+                  {Icons.Trash} ביטול תור
+                </button>
+              </div>
+            )}
+          </div>
+
         </div>
       ))}
       {appointments.length === 0 && <div className="card" style={{textAlign:'center', padding:'4rem'}}>טרם הזמנת תורים במערכת.</div>}
     </div>
   </div>
-);
+  );
+};
 
 const Auth = ({ onLogin, onLoginBusiness, onRegisterUser, onRegisterBusiness }) => {
   const [isLogin, setIsLogin] = useState(true);
@@ -589,6 +642,22 @@ const App = () => {
       } catch (err) { alert(err.message); }
     }
   };
+
+  const handleChangeAppointment = async (id, formattedDate) => {
+    try {
+      // שליחת אובייקט עם השדה date (מוכן בפורמט DD/MM/YYYY) לשרת
+      await api.updateAppointment(id, { date: formattedDate }, token);
+      
+      // עדכון התצוגה של המשתמש מיידית
+      setAppointments(appointments.map(a => a._id === id ? { ...a, date: formattedDate } : a));
+      
+      alert("תאריך התור עודכן בהצלחה!");
+    } catch (err) { 
+      alert(err.message || "שגיאה בעדכון התור"); 
+    }
+  };
+
+
   const handleRegisterUser = async (name, email, password) => {
   try {
     const data = await api.register(name, email, password);
@@ -684,7 +753,7 @@ const handleRegisterBusiness = async (formData) => {
       )}
 
       {view === 'admin' && user?.role === 'business' && <AdminDashboard user={user} appointments={appointments} onStatusUpdate={handleCancelAppointment} onApprove={(id) => alert('התור אושר!')} />}
-      {view === 'profile' && user && <UserProfile user={user} appointments={appointments} onCancel={handleCancelAppointment} />}
+      {view === 'profile' && user && <UserProfile user={user} appointments={appointments} onCancel={handleCancelAppointment} onReschedule={handleChangeAppointment}  />}
       {view === 'login' && <Auth onLogin={handleLogin} onLoginBusiness={handleLoginBusiness} onRegisterUser={handleRegisterUser} onRegisterBusiness={handleRegisterBusiness} />}
     </div>
   );
