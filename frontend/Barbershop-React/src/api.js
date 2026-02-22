@@ -78,6 +78,19 @@ export const getBusinessData = async (businessId) => {
   };
 };
 
+// יצירת שירות חדש לעסק (דורש טוקן של מנהל עסק)
+export const createService = async (serviceData, token) => {
+  const response = await fetch(`${BASE_URL}/resources/services`, {
+    method: 'POST',
+    headers: { 
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}` 
+    },
+    body: JSON.stringify(serviceData),
+  });
+  return handleResponse(response);
+};
+
 // --- BOOKING (Appointments) ---
 
 // קבלת כל התורים (ללקוח או למנהל - תלוי בטוקן)

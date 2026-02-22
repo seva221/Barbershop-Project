@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import * as api from './api';
 
+
+
 // --- STYLES (Premium Calmark Design) ---
 const GLOBAL_STYLES = `
 :root {
@@ -136,24 +138,123 @@ const Navbar = ({ user, setView, onLogout }) => (
   </nav>
 );
 
-const AdminDashboard = ({ user, appointments, onStatusUpdate, onApprove }) => (
+
+const AdminDashboard = ({ user, appointments = [], onStatusUpdate, onApprove }) => {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [serviceData, setServiceData] = useState({ name: '', duration: '', price: '', businessId: user?._id});
+  
+  // פונקציה לטיפול בשליחת הטופס
+  const handleAddService = async (e) => {
+    e.preventDefault();
+    try {
+      // המרת הנתונים למספרים כדי למנוע שגיאות ולידציה בשרת (Zod)
+      const payload = {
+        name: serviceData.name,
+        duration: Number(serviceData.duration),
+        price: Number(serviceData.price),
+        businessId: serviceData.businessId
+      };
+
+      await api.createService(payload, user?.token); 
+      
+        
+      alert('השירות נוסף בהצלחה!');
+      setIsModalOpen(false); // סגירת המודל
+      setServiceData({ name: '', duration: '', price: '' }); // איפוס הטופס
+        
+      // כאן כדאי להוסיף קריאה לפונקציה שמרעננת את רשימת השירותים במסך
+        
+    } catch (error) {
+      // Changed console errors to English for better debugging
+      console.error("Failed to add service. Error details:", error);
+      if (error.errors) {
+         console.error("Validation errors from server:", error.errors);
+      }
+      
+      alert('שגיאה בהוספת השירות, אנא נסה שוב.');
+    }
+  };
+
+  return (
   <div className="container fade-in" style={{padding:'3rem 0'}}>
     <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'2rem'}}>
-        <h1 style={{fontSize:'2.5rem'}}>לוח ניהול {user.name} {Icons.Chart}</h1>
-        <button className="btn btn-primary" style={{width:'auto'}}>+ הוסף שירות</button>
+        <h1 style={{fontSize:'2.5rem'}}>לוח ניהול {user?.name} {Icons?.Chart}</h1>
+        <button className="btn btn-primary" 
+        style={{width:'auto'}}
+        onClick={() => setIsModalOpen(true)}>
+        + הוסף שירות
+        </button>
     </div>
+    
+    {isModalOpen && (
+    <div style={{
+        position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, 
+        backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', 
+        justifyContent: 'center', alignItems: 'center', zIndex: 1000
+    }}>
+        <div style={{
+            backgroundColor: 'white', padding: '2rem', borderRadius: '8px', 
+            width: '90%', maxWidth: '400px', textAlign: 'right'
+        }}>
+            <h2 style={{marginTop: 0, marginBottom: '1.5rem'}}>הוספת שירות חדש</h2>
+            
+            <form onSubmit={handleAddService}>
+                <input 
+                    className="input-field" 
+                    type="text" 
+                    placeholder="שם השירות" 
+                    value={serviceData.name} 
+                    onChange={e => setServiceData({...serviceData, name: e.target.value})} 
+                    required 
+                    style={{marginBottom: '1rem', width: '100%', boxSizing: 'border-box'}}
+                />
+                <input 
+                    className="input-field" 
+                    type="number" 
+                    placeholder="זמן (בדקות)" 
+                    value={serviceData.duration} 
+                    onChange={e => setServiceData({...serviceData, duration: e.target.value})} 
+                    required 
+                    style={{marginBottom: '1rem', width: '100%', boxSizing: 'border-box'}}
+                />
+                <input 
+                    className="input-field" 
+                    type="number" 
+                    placeholder="מחיר" 
+                    value={serviceData.price} 
+                    onChange={e => setServiceData({...serviceData, price: e.target.value})} 
+                    required 
+                    style={{marginBottom: '1.5rem', width: '100%', boxSizing: 'border-box'}}
+                />
+                
+                <div style={{display: 'flex', gap: '1rem'}}>
+                    <button className="btn btn-primary" type="submit" style={{flex: 1}}>
+                        שמור שירות
+                    </button>
+                    <button 
+                        className="btn" 
+                        type="button" 
+                        onClick={() => setIsModalOpen(false)}
+                        style={{flex: 1, backgroundColor: '#e0e0e0', color: '#333'}}>
+                        ביטול
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    )}
     <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(240px, 1fr))', gap:'1.5rem', marginBottom:'3rem'}}>
       <div className="card" style={{padding: '2rem', textAlign:'center'}}>
         <div style={{color:'var(--text-muted)'}}>תורים היום</div>
-        <div style={{fontSize:'2.5rem', fontWeight:900}}>{appointments.length}</div>
+        <div style={{fontSize:'2.5rem', fontWeight:900}}>{appointments?.length || 0}</div>
       </div>
       <div className="card" style={{padding: '2rem', textAlign:'center', borderColor:'#10b981'}}>
         <div style={{color:'var(--text-muted)'}}>הכנסה צפויה (₪)</div>
-        <div style={{fontSize:'2.5rem', fontWeight:900}}>{appointments.length * 150}</div>
+        <div style={{fontSize:'2.5rem', fontWeight:900}}>{(appointments?.length || 0) * 150}</div>
       </div>
       <div className="card" style={{padding: '2rem', textAlign:'center'}}>
         <div style={{color:'var(--text-muted)'}}>דירוג ממוצע</div>
-        <div style={{fontSize:'2.5rem', fontWeight:900}}>4.9 {Icons.Star}</div>
+        <div style={{fontSize:'2.5rem', fontWeight:900}}>4.9 {Icons?.Star}</div>
       </div>
     </div>
     <div className="card">
@@ -168,15 +269,15 @@ const AdminDashboard = ({ user, appointments, onStatusUpdate, onApprove }) => (
             </tr>
             </thead>
             <tbody>
-            {appointments.map(app => (
+            {appointments?.map(app => (
                 <tr key={app._id} style={{borderBottom:'1px solid var(--bg)'}}>
                 <td style={{padding:'1rem', fontWeight:700}}>{app.userId?.name || 'אורח'}</td>
                 <td style={{padding:'1rem'}}>{app.time}</td>
                 <td style={{padding:'1rem'}}>{app.serviceId?.name || 'תספורת גברים'}</td>
                 <td style={{padding:'1rem'}}>
                   <div style={{display:'flex', gap:'5px'}}>
-                    <button className="btn" style={{padding:'0.4rem', background:'#dcfce7'}} onClick={() => onApprove(app._id)} title="אשר תור">{Icons.Check}</button>
-                    <button className="btn" style={{padding:'0.4rem', background:'#fee2e2'}} onClick={() => onStatusUpdate(app._id)} title="דחה תור">{Icons.X}</button>
+                    <button className="btn" style={{padding:'0.4rem', background:'#dcfce7'}} onClick={() => onApprove(app._id)} title="אשר תור">{Icons?.Check}</button>
+                    <button className="btn" style={{padding:'0.4rem', background:'#fee2e2'}} onClick={() => onStatusUpdate(app._id)} title="דחה תור">{Icons?.X}</button>
                   </div>
                 </td>
                 </tr>
@@ -184,9 +285,8 @@ const AdminDashboard = ({ user, appointments, onStatusUpdate, onApprove }) => (
             </tbody>
         </table>
     </div>
-  </div>
-);
-
+  </div>)
+};
 const UserProfile = ({ user, appointments, onCancel }) => (
   <div className="container fade-in" style={{padding:'3rem 0'}}>
     <h1 style={{marginBottom:'2rem'}}>התורים שלי {Icons.Calendar}</h1>
