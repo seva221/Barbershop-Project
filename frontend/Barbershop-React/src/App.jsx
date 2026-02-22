@@ -547,13 +547,37 @@ const App = () => {
   };
 
   const handleConfirmBooking = async () => {
-    if (!bookingForm.serviceId || !bookingForm.date || !bookingForm.time) return alert("בחר שירות, תאריך ושעה");
+    if (!bookingForm.serviceId || !bookingForm.date || !bookingForm.time) {
+      return alert("בחר שירות, תאריך ושעה");
+    }
+  
     try {
-        await api.createAppointment({ businessId: bookingBusiness._id, ...bookingForm, customerId: user._id}, token);
-        alert("תור נקבע בהצלחה!");
-        setBookingBusiness(null);
-        setView('profile');
-    } catch (e) { alert(e.message); }
+      // 1. קריאה לשרת כדי להביא את פרטי המשתמש המלאים (כולל טלפון)
+      const fetchedUser = await api.getUser(user._id, token);
+      
+      // 2. בניית האובייקט לשליחה לפי מה ש-Zod דורש
+      const payload = { 
+        businessId: bookingBusiness._id, 
+        ...bookingForm, 
+        customerId: user._id,
+        guestDetails: {
+          name: fetchedUser.name,
+          // ודא שהשרת אכן מחזיר phone, אם לא - שים ערך ברירת מחדל כדי ש-Zod לא יקרוס
+          phone: fetchedUser.phone || "לא הוזן טלפון" 
+        }
+      };
+  
+      // 3. שליחה לשרת
+      await api.createAppointment(payload, token); 
+      
+      alert("תור נקבע בהצלחה!");
+      setBookingBusiness(null);
+      setView('profile');
+      
+    } catch (e) { 
+      console.error("Booking error:", e);
+      alert(e.message || "שגיאה בקביעת התור"); 
+    }
   };
 
   const handleCancelAppointment = async (id) => {

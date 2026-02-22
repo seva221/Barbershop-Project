@@ -149,3 +149,15 @@ export const createWorker = async (workerData, token) => {
   });
   return handleResponse(response);
 };
+
+export const getUser = async (userId, token) => {
+  console.log(userId);
+  const response = await fetch(`${BASE_URL}/auth/user/${userId}`, {
+    method: 'GET',
+    headers: { 
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}` 
+    },
+  });
+  return handleResponse(response);
+};
