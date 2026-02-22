@@ -36,6 +36,7 @@ export const registerBusiness = async (req, res) => {
       category,
       email,
       passwordHash,
+      address,
     });
 
     // need to assign owner id somewhere
