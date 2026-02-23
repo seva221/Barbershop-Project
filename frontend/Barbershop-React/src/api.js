@@ -40,11 +40,11 @@ export const loginBusiness = async (email, password) => {
 };
 
 // הרשמת לקוח
-export const register = async (name, email, password) => {
+export const register = async (formData) => {
   const response = await fetch(`${BASE_URL}/auth/user/register`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name, email, password }),
+    body: JSON.stringify(formData),
   });
   return handleResponse(response);
 };

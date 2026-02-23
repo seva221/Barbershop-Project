@@ -12,7 +12,6 @@ const router = express.Router();
 router.post("/register", registerBusiness);
 router.post("/login", loginBusiness);
 
-// 🔥 כאן הקסם קורה
 router.patch("/update/:id", updateBusiness); // רק ה-controller
 
 export default router;
