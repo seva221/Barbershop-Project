@@ -38,7 +38,6 @@ export const registerBusiness = async (req, res) => {
       passwordHash,
       address,
     });
-
     // need to assign owner id somewhere
     
     // Generate JWT
@@ -90,7 +89,7 @@ export const loginBusiness = async (req, res) => {
     // Verify password
     const isMatch = await bcrypt.compare(password, business.passwordHash);
     if (!isMatch) {
-      return res.status(401).json({ message: "Invalid credentials" });
+      return res.status(401).json({ message: "Invalid credentials (pass change later)" });
     }
 
     // Generate JWT
@@ -110,7 +109,6 @@ export const loginBusiness = async (req, res) => {
 
     // Set HTTP-only cookie
     res = createCookie(res, token);
-
     res.status(200).json({
       message: "Business login successful",
       business: businessResponse,

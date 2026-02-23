@@ -115,7 +115,7 @@ export const createService = async (req, res) => {
       price,
       businessId,
     });
-
+    console.log(businessId);
     return res.status(201).json({
       success: true,
       service,

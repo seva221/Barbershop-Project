@@ -78,6 +78,19 @@ export const getBusinessData = async (businessId) => {
   };
 };
 
+// יצירת שירות חדש לעסק (דורש טוקן של מנהל עסק)
+export const createService = async (serviceData, token) => {
+  const response = await fetch(`${BASE_URL}/resources/services`, {
+    method: 'POST',
+    headers: { 
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}` 
+    },
+    body: JSON.stringify(serviceData),
+  });
+  return handleResponse(response);
+};
+
 // --- BOOKING (Appointments) ---
 
 // קבלת כל התורים (ללקוח או למנהל - תלוי בטוקן)
@@ -124,3 +137,27 @@ export const deleteAppointment = async (appointmentId, token) => {
   return handleResponse(response);
 };
 
+// יצירת עובד חדש
+export const createWorker = async (workerData, token) => {
+  const response = await fetch(`${BASE_URL}/resources/workers`, {
+    method: 'POST',
+    headers: { 
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}` 
+    },
+    body: JSON.stringify(workerData),
+  });
+  return handleResponse(response);
+};
+
+export const getUser = async (userId, token) => {
+  console.log(userId);
+  const response = await fetch(`${BASE_URL}/auth/user/${userId}`, {
+    method: 'GET',
+    headers: { 
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}` 
+    },
+  });
+  return handleResponse(response);
+};

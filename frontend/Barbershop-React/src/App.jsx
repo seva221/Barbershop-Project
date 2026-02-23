@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import * as api from './api';
 
+
+
 // --- STYLES (Premium Calmark Design) ---
 const GLOBAL_STYLES = `
 :root {
@@ -136,31 +138,195 @@ const Navbar = ({ user, setView, onLogout }) => (
   </nav>
 );
 
-const AdminDashboard = ({ user, appointments, onStatusUpdate, onApprove }) => (
+
+const AdminDashboard = ({ user, appointments = [], onStatusUpdate, onApprove }) => {
+  const businessId = user?._id || user?.id || '';
+  // --- States ---
+  const [isModalOpen, setIsModalOpen] = useState(false); // למודל שירות
+  const [serviceData, setServiceData] = useState({ name: '', duration: '', price: '' });
+  
+  const [isWorkerModalOpen, setIsWorkerModalOpen] = useState(false); // למודל עובד
+  const [workerData, setWorkerData] = useState({ name: '', phone: '', businessId: businessId });
+  
+  // --- Handlers ---
+  
+  // פונקציה להוספת שירות
+  const handleAddService = async (e) => {
+    e.preventDefault();
+    try {
+      const payload = {
+        name: serviceData.name,
+        duration: Number(serviceData.duration),
+        price: Number(serviceData.price),
+        businessId: businessId 
+      };
+
+      await api.createService(payload, user?.token); 
+      alert('השירות נוסף בהצלחה!');
+      setIsModalOpen(false);
+      setServiceData({ name: '', duration: '', price: '' });
+    } catch (error) {
+      console.error("Failed to add service. Error details:", error);
+      alert('שגיאה בהוספת השירות, אנא נסה שוב.');
+    }
+  };
+
+  // פונקציה להוספת עובד
+  const handleAddWorker = async (e) => {
+    e.preventDefault();
+    try {
+      const payload = {
+        name: workerData.name,
+        phone: workerData.phone,
+        businessId: businessId
+        // הערה: אם תוסיף בעתיד תמיכה בשרת ל"התמחויות", תוכל להעביר גם את:
+        // specialties: workerData.specialties
+      };
+
+      await api.createWorker(payload, user?.token); 
+      alert('העובד נוסף בהצלחה!');
+      setIsWorkerModalOpen(false);
+      setWorkerData({ name: '', phone: '', businessId: '' });
+    } catch (error) {
+      console.error("Failed to add worker. Error details:", error);
+      alert('שגיאה בהוספת העובד, אנא נסה שוב.');
+    }
+  };
+
+  // פונקציית עזר לסגירת מודלים בלחיצה על הרקע (האזור הכהה)
+  const handleOverlayClick = (e, setter) => {
+    if (e.target === e.currentTarget) {
+      setter(false);
+    }
+  };
+
+  return (
   <div className="container fade-in" style={{padding:'3rem 0'}}>
+    
+    {/* --- Header & Buttons --- */}
     <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'2rem'}}>
-        <h1 style={{fontSize:'2.5rem'}}>לוח ניהול {user.name} {Icons.Chart}</h1>
-        <button className="btn btn-primary" style={{width:'auto'}}>+ הוסף שירות</button>
+        <h1 style={{fontSize:'2.5rem'}}>לוח ניהול {user?.name} {/* {Icons?.Chart} */}</h1>
+        
+        <div style={{display: 'flex', gap: '1rem'}}>
+          <button 
+            className="btn" 
+            style={{backgroundColor: '#10b981', color: 'white', width:'auto', fontWeight: 'bold', padding: '0.8rem 1.5rem', borderRadius: '8px'}}
+            onClick={() => setIsWorkerModalOpen(true)}>
+            + הוסף עובד
+          </button>
+          <button 
+            className="btn" 
+            style={{backgroundColor: '#0f172a', color: 'white', width:'auto', fontWeight: 'bold', padding: '0.8rem 1.5rem', borderRadius: '8px'}}
+            onClick={() => setIsModalOpen(true)}>
+            + הוסף שירות
+          </button>
+        </div>
     </div>
+    
+    {/* --- מודל הוספת עובד --- */}
+    {isWorkerModalOpen && (
+    <div 
+        onClick={(e) => handleOverlayClick(e, setIsWorkerModalOpen)}
+        style={{
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, 
+            backgroundColor: 'rgba(0,0,0,0.4)', display: 'flex', 
+            justifyContent: 'center', alignItems: 'center', zIndex: 1000
+    }}>
+        <div style={{
+            backgroundColor: 'white', padding: '2.5rem', borderRadius: '16px', 
+            width: '90%', maxWidth: '900px', textAlign: 'right',
+            boxShadow: '0 10px 25px rgba(0,0,0,0.1)'
+        }}>
+            <h2 style={{marginTop: 0, marginBottom: '2rem', fontSize: '1.2rem', fontWeight: 'bold'}}>הוספת עובד חדש</h2>
+            <form onSubmit={handleAddWorker} style={{display: 'flex', flexDirection: 'column', gap: '1rem'}}>
+                <input 
+                    className="input-field" type="text" placeholder="שם העובד" 
+                    value={workerData.name} onChange={e => setWorkerData({...workerData, name: e.target.value})} required 
+                    style={{width: '100%', boxSizing: 'border-box', padding: '1rem', borderRadius: '8px', border: '1px solid #e2e8f0'}} 
+                />
+                <input 
+                    className="input-field" type="text" placeholder="טלפון" 
+                    value={workerData.phone} onChange={e => setWorkerData({...workerData, phone: e.target.value})} required 
+                    style={{width: '100%', boxSizing: 'border-box', padding: '1rem', borderRadius: '8px', border: '1px solid #e2e8f0'}} 
+                />
+                
+                <button type="submit" style={{
+                    width: '100%', backgroundColor: '#10b981', color: 'white', 
+                    padding: '1rem', borderRadius: '8px', border: 'none', 
+                    fontWeight: 'bold', fontSize: '1rem', marginTop: '1rem', cursor: 'pointer'
+                }}>
+                    שמור עובד
+                </button>
+            </form>
+        </div>
+    </div>
+    )}
+
+    {/* --- מודל הוספת שירות --- */}
+    {isModalOpen && (
+    <div 
+        onClick={(e) => handleOverlayClick(e, setIsModalOpen)}
+        style={{
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, 
+            backgroundColor: 'rgba(0,0,0,0.4)', display: 'flex', 
+            justifyContent: 'center', alignItems: 'center', zIndex: 1000
+    }}>
+        <div style={{
+            backgroundColor: 'white', padding: '2.5rem', borderRadius: '16px', 
+            width: '90%', maxWidth: '900px', textAlign: 'right',
+            boxShadow: '0 10px 25px rgba(0,0,0,0.1)'
+        }}>
+            <h2 style={{marginTop: 0, marginBottom: '2rem', fontSize: '1.2rem', fontWeight: 'bold'}}>הוספת שירות חדש</h2>
+            <form onSubmit={handleAddService} style={{display: 'flex', flexDirection: 'column', gap: '1rem'}}>
+                <input 
+                    className="input-field" type="text" placeholder="שם השירות (לדוגמה: תספורת גברים)" 
+                    value={serviceData.name} onChange={e => setServiceData({...serviceData, name: e.target.value})} required 
+                    style={{width: '100%', boxSizing: 'border-box', padding: '1rem', borderRadius: '8px', border: '1px solid #e2e8f0'}} 
+                />
+                <input 
+                    className="input-field" type="number" placeholder="מחיר (₪)" 
+                    value={serviceData.price} onChange={e => setServiceData({...serviceData, price: e.target.value})} required 
+                    style={{width: '100%', boxSizing: 'border-box', padding: '1rem', borderRadius: '8px', border: '1px solid #e2e8f0'}} 
+                />
+                <input 
+                    className="input-field" type="number" placeholder="משך זמן (בדקות)" 
+                    value={serviceData.duration} onChange={e => setServiceData({...serviceData, duration: e.target.value})} required 
+                    style={{width: '100%', boxSizing: 'border-box', padding: '1rem', borderRadius: '8px', border: '1px solid #e2e8f0'}} 
+                />
+                
+                <button type="submit" style={{
+                    width: '100%', backgroundColor: '#0f172a', color: 'white', 
+                    padding: '1rem', borderRadius: '8px', border: 'none', 
+                    fontWeight: 'bold', fontSize: '1rem', marginTop: '1rem', cursor: 'pointer'
+                }}>
+                    שמור שירות
+                </button>
+            </form>
+        </div>
+    </div>
+    )}
+
+    {/* --- שאר הדשבורד --- */}
     <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(240px, 1fr))', gap:'1.5rem', marginBottom:'3rem'}}>
       <div className="card" style={{padding: '2rem', textAlign:'center'}}>
         <div style={{color:'var(--text-muted)'}}>תורים היום</div>
-        <div style={{fontSize:'2.5rem', fontWeight:900}}>{appointments.length}</div>
+        <div style={{fontSize:'2.5rem', fontWeight:900}}>{appointments?.length || 0}</div>
       </div>
       <div className="card" style={{padding: '2rem', textAlign:'center', borderColor:'#10b981'}}>
         <div style={{color:'var(--text-muted)'}}>הכנסה צפויה (₪)</div>
-        <div style={{fontSize:'2.5rem', fontWeight:900}}>{appointments.length * 150}</div>
+        <div style={{fontSize:'2.5rem', fontWeight:900}}>{(appointments?.length || 0) * 150}</div>
       </div>
       <div className="card" style={{padding: '2rem', textAlign:'center'}}>
         <div style={{color:'var(--text-muted)'}}>דירוג ממוצע</div>
-        <div style={{fontSize:'2.5rem', fontWeight:900}}>4.9 {Icons.Star}</div>
+        <div style={{fontSize:'2.5rem', fontWeight:900}}>4.9 {/* {Icons?.Star} */}</div>
       </div>
     </div>
+    
     <div className="card">
         <h3 style={{padding:'1.5rem', marginBottom:0}}>ניהול יומן תורים</h3>
         <table style={{width:'100%', borderCollapse:'collapse'}}>
             <thead>
-            <tr style={{textAlign:'right', borderBottom:'2px solid var(--bg)'}}>
+            <tr style={{textAlign:'right', borderBottom:'2px solid #e2e8f0'}}>
                 <th style={{padding:'1rem'}}>לקוח</th>
                 <th style={{padding:'1rem'}}>שעה</th>
                 <th style={{padding:'1rem'}}>שירות</th>
@@ -168,15 +334,15 @@ const AdminDashboard = ({ user, appointments, onStatusUpdate, onApprove }) => (
             </tr>
             </thead>
             <tbody>
-            {appointments.map(app => (
-                <tr key={app._id} style={{borderBottom:'1px solid var(--bg)'}}>
+            {appointments?.map(app => (
+                <tr key={app._id} style={{borderBottom:'1px solid #f8fafc'}}>
                 <td style={{padding:'1rem', fontWeight:700}}>{app.userId?.name || 'אורח'}</td>
                 <td style={{padding:'1rem'}}>{app.time}</td>
                 <td style={{padding:'1rem'}}>{app.serviceId?.name || 'תספורת גברים'}</td>
                 <td style={{padding:'1rem'}}>
                   <div style={{display:'flex', gap:'5px'}}>
-                    <button className="btn" style={{padding:'0.4rem', background:'#dcfce7'}} onClick={() => onApprove(app._id)} title="אשר תור">{Icons.Check}</button>
-                    <button className="btn" style={{padding:'0.4rem', background:'#fee2e2'}} onClick={() => onStatusUpdate(app._id)} title="דחה תור">{Icons.X}</button>
+                    <button className="btn" style={{padding:'0.4rem', background:'#dcfce7'}} onClick={() => onApprove(app._id)} title="אשר תור">✓</button>
+                    <button className="btn" style={{padding:'0.4rem', background:'#fee2e2'}} onClick={() => onStatusUpdate(app._id)} title="דחה תור">✕</button>
                   </div>
                 </td>
                 </tr>
@@ -184,15 +350,36 @@ const AdminDashboard = ({ user, appointments, onStatusUpdate, onApprove }) => (
             </tbody>
         </table>
     </div>
-  </div>
-);
+  </div>)
+};
 
-const UserProfile = ({ user, appointments, onCancel }) => (
+const UserProfile = ({ user, appointments, onCancel, onReschedule }) => {
+  // סטייט כדי לדעת איזה תור אנחנו עורכים עכשיו, ואת התאריך החדש
+  const [editingId, setEditingId] = useState(null);
+  const [newDate, setNewDate] = useState('');
+
+  const handleSaveReschedule = () => {
+    if (!newDate) return alert("אנא בחר תאריך חדש");
+    
+    // שדה type="date" מחזיר YYYY-MM-DD. נהפוך את זה ל-DD/MM/YYYY:
+    const [year, month, day] = newDate.split('-');
+    const formattedDate = `${day}/${month}/${year}`;
+    
+    // קריאה לפונקציה שמועברת מ-App
+    onReschedule(editingId, formattedDate);
+    
+    // סגירת מצב העריכה
+    setEditingId(null);
+    setNewDate('');
+  };
+
+  return (
   <div className="container fade-in" style={{padding:'3rem 0'}}>
     <h1 style={{marginBottom:'2rem'}}>התורים שלי {Icons.Calendar}</h1>
     <div style={{display:'grid', gap:'1.5rem'}}>
       {appointments.map(app => (
-        <div key={app._id} className="card" style={{display:'flex', justifyContent:'space-between', alignItems:'center', padding:'1.5rem'}}>
+        <div key={app._id} className="card" style={{display:'flex', justifyContent:'space-between', alignItems:'center', padding:'1.5rem', flexWrap: 'wrap', gap: '1rem'}}>
+          
           <div style={{display:'flex', gap:'1.5rem', alignItems:'center'}}>
             <div style={{background:'var(--accent-soft)', padding:'1.2rem', borderRadius:'20px', fontSize:'1.8rem'}}>{Icons.Clock}</div>
             <div>
@@ -200,18 +387,50 @@ const UserProfile = ({ user, appointments, onCancel }) => (
               <div style={{color:'var(--text-muted)'}}>{app.date} | בשעה {app.time}</div>
             </div>
           </div>
-          <button className="btn btn-danger" style={{width:'auto'}} onClick={() => onCancel(app._id)}>{Icons.Trash} ביטול תור</button>
+
+          <div>
+            {/* אם אנחנו במצב עריכה על התור הזה, נציג את האינפוט */}
+            {editingId === app._id ? (
+              <div style={{display: 'flex', gap: '0.5rem', alignItems: 'center'}}>
+                <input 
+                  type="date" 
+                  className="input-field" 
+                  style={{marginBottom: 0, width: 'auto'}} 
+                  value={newDate} 
+                  onChange={e => setNewDate(e.target.value)} 
+                />
+                <button className="btn btn-primary" style={{padding: '0.8rem 1rem'}} onClick={handleSaveReschedule}>
+                  {Icons.Check} שמור
+                </button>
+                <button className="btn" style={{padding: '0.8rem 1rem', background: '#e2e8f0'}} onClick={() => {setEditingId(null); setNewDate('');}}>
+                  {Icons.X}
+                </button>
+              </div>
+            ) : (
+              /* אם אנחנו לא בעריכה, נציג את הכפתורים הרגילים */
+              <div style={{display: 'flex', gap: '0.5rem'}}>
+                <button className="btn btn-primary" style={{width:'auto', background: 'var(--accent)'}} onClick={() => setEditingId(app._id)}>
+                  שינוי מועד
+                </button>
+                <button className="btn btn-danger" style={{width:'auto'}} onClick={() => onCancel(app._id)}>
+                  {Icons.Trash} ביטול תור
+                </button>
+              </div>
+            )}
+          </div>
+
         </div>
       ))}
       {appointments.length === 0 && <div className="card" style={{textAlign:'center', padding:'4rem'}}>טרם הזמנת תורים במערכת.</div>}
     </div>
   </div>
-);
+  );
+};
 
 const Auth = ({ onLogin, onLoginBusiness, onRegisterUser, onRegisterBusiness }) => {
   const [isLogin, setIsLogin] = useState(true);
   const [regType, setRegType] = useState('customer');
-  const [formData, setFormData] = useState({ name: '', email: '', password: '', address: '', category: 'Barbershop' });
+  const [formData, setFormData] = useState({ name: '', email: '', password: '', address: '', phone: '', category: 'Barbershop' });
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -233,10 +452,63 @@ const Auth = ({ onLogin, onLoginBusiness, onRegisterUser, onRegisterBusiness }) 
           <button type="button" style={{flex:1, padding:'0.6rem', border:'none', borderRadius:'9px', cursor:'pointer', fontWeight:600, background: regType === 'business' ? 'white' : 'transparent'}} onClick={() => setRegType('business')}>עסק</button>
         </div>
         <form onSubmit={handleSubmit}>
-          {!isLogin && <input className="input-field" placeholder={regType === 'business' ? "שם העסק" : "שם מלא"} value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} required />}
-          <input className="input-field" type="email" placeholder="אימייל" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} required />
-          <input className="input-field" type="password" placeholder="סיסמה" value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} required />
-          <button className="btn btn-primary" type="submit">{isLogin ? 'כניסה למערכת' : 'הרשמה עכשיו'}</button>
+            {!isLogin && (
+                <input 
+                    className="input-field" 
+                    placeholder={regType === 'business' ? "שם העסק" : "שם מלא"} 
+                    value={formData.name} 
+                    onChange={e => setFormData({...formData, name: e.target.value})} 
+                    required 
+                />
+             )}
+            
+            {!isLogin && regType === 'business' && (
+            <select className="input-field" value={formData.serviceType || ''} onChange={e => setFormData({...formData, serviceType: e.target.value})} required>
+              <option value="" disabled>בחר סוג שירות...</option>
+              <option value="מספרה">מספרה</option>
+              <option value="מכון יופי">מכון יופי וקוסמטיקה</option>
+              <option value="ספא">ספא ועיסוי</option>
+            </select>
+            )}
+            <input 
+                className="input-field" 
+                type="email" 
+                placeholder="אימייל" 
+                value={formData.email} 
+                onChange={e => setFormData({...formData, email: e.target.value})} 
+                required 
+            />
+            <input 
+                className="input-field" 
+                type="password" 
+                placeholder="סיסמה" 
+                value={formData.password} 
+                onChange={e => setFormData({...formData, password: e.target.value})} 
+                required 
+            />
+            {!isLogin && regType === 'customer' && (
+            <input 
+                className="input-field" 
+                type="phone" 
+                placeholder="טלפון" 
+                value={formData.phone} 
+                onChange={e => setFormData({...formData, phone: e.target.value})} 
+                required 
+            />
+            )}
+            {!isLogin && regType === 'business' && (
+            <input 
+                className="input-field" 
+                type="text" 
+                placeholder="כתובת" 
+                value={formData.address} 
+                onChange={e => setFormData({...formData, address: e.target.value})} 
+                required 
+            />
+            )}
+            <button className="btn btn-primary" type="submit">
+                {isLogin ? 'כניסה למערכת' : 'הרשמה עכשיו'}
+            </button>
         </form>
         <button onClick={() => setIsLogin(!isLogin)} style={{background:'none', border:'none', color:'var(--accent)', fontWeight:'800', cursor:'pointer', textDecoration:'underline', width:'100%', marginTop:'1.5rem'}}>{isLogin ? 'אין לך חשבון? הירשם כאן' : 'כבר רשום? התחבר למערכת'}</button>
       </div>
@@ -329,13 +601,37 @@ const App = () => {
   };
 
   const handleConfirmBooking = async () => {
-    if (!bookingForm.serviceId || !bookingForm.date || !bookingForm.time) return alert("בחר שירות, תאריך ושעה");
+    if (!bookingForm.serviceId || !bookingForm.date || !bookingForm.time) {
+      return alert("בחר שירות, תאריך ושעה");
+    }
+  
     try {
-        await api.createAppointment({ businessId: bookingBusiness._id, ...bookingForm }, token);
-        alert("תור נקבע בהצלחה!");
-        setBookingBusiness(null);
-        setView('profile');
-    } catch (e) { alert(e.message); }
+      const currentUserId = user?._id || user?.id;
+      // 1. קריאה לשרת כדי להביא את פרטי המשתמש המלאים (כולל טלפון)
+      const fetchedUser = await api.getUser(currentUserId, token);
+      
+      // 2. בניית האובייקט לשליחה לפי מה ש-Zod דורש
+      const payload = { 
+        businessId: bookingBusiness._id, 
+        ...bookingForm, 
+        customerId: currentUserId,
+        guestDetails: {
+          name: fetchedUser.name,
+          phone: fetchedUser.phone || "0000000000" 
+        }
+      };
+  
+      // 3. שליחה לשרת
+      await api.createAppointment(payload, token); 
+      
+      alert("תור נקבע בהצלחה!");
+      setBookingBusiness(null);
+      setView('profile');
+      
+    } catch (e) { 
+      console.error("Booking error:", e);
+      alert(e.message || "שגיאה בקביעת התור"); 
+    }
   };
 
   const handleCancelAppointment = async (id) => {
@@ -346,6 +642,22 @@ const App = () => {
       } catch (err) { alert(err.message); }
     }
   };
+
+  const handleChangeAppointment = async (id, formattedDate) => {
+    try {
+      // שליחת אובייקט עם השדה date (מוכן בפורמט DD/MM/YYYY) לשרת
+      await api.updateAppointment(id, { date: formattedDate }, token);
+      
+      // עדכון התצוגה של המשתמש מיידית
+      setAppointments(appointments.map(a => a._id === id ? { ...a, date: formattedDate } : a));
+      
+      alert("תאריך התור עודכן בהצלחה!");
+    } catch (err) { 
+      alert(err.message || "שגיאה בעדכון התור"); 
+    }
+  };
+
+
   const handleRegisterUser = async (name, email, password) => {
   try {
     const data = await api.register(name, email, password);
@@ -441,7 +753,7 @@ const handleRegisterBusiness = async (formData) => {
       )}
 
       {view === 'admin' && user?.role === 'business' && <AdminDashboard user={user} appointments={appointments} onStatusUpdate={handleCancelAppointment} onApprove={(id) => alert('התור אושר!')} />}
-      {view === 'profile' && user && <UserProfile user={user} appointments={appointments} onCancel={handleCancelAppointment} />}
+      {view === 'profile' && user && <UserProfile user={user} appointments={appointments} onCancel={handleCancelAppointment} onReschedule={handleChangeAppointment}  />}
       {view === 'login' && <Auth onLogin={handleLogin} onLoginBusiness={handleLoginBusiness} onRegisterUser={handleRegisterUser} onRegisterBusiness={handleRegisterBusiness} />}
     </div>
   );
