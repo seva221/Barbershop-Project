@@ -1,15 +1,18 @@
-// routes/auth.business.routes.js
 import express from "express";
 import {
   registerBusiness,
   loginBusiness,
+  updateBusiness
 } from "../controllers/auth.business.controller.js";
 
 const router = express.Router();
 
-// the middleware handles JWT confirmation
-// if none or incorrect -> reject (400, 401)
+// ===== ROUTES =====
+
 router.post("/register", registerBusiness);
 router.post("/login", loginBusiness);
+
+// 🔥 כאן הקסם קורה
+router.patch("/update/:id", updateBusiness); // רק ה-controller
 
 export default router;

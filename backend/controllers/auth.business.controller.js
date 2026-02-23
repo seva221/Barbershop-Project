@@ -18,7 +18,7 @@ const createCookie = (res, token) => {
 export const registerBusiness = async (req, res) => {
   try {
     // Validate input
-    const { name, ownerId, category, email, password } = registerBusinessSchema.parse(req.body);
+    const { name, ownerId, category, email, password, address } = registerBusinessSchema.parse(req.body);
 
     // Check if email or owner already exists
     const existingBusiness = await Business.findOne({ email });
@@ -36,6 +36,7 @@ export const registerBusiness = async (req, res) => {
       category,
       email,
       passwordHash,
+      address,
     });
     // need to assign owner id somewhere
     
@@ -119,6 +120,33 @@ export const loginBusiness = async (req, res) => {
         errors: err.issues.map((e) => e.message),
       });
     }
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+/* ========================= UPDATE BUSINESS (IMAGE/DETAILS) ========================= */
+export const updateBusiness = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updates = req.body; // { image: "url" }
+
+    const updatedBusiness = await Business.findByIdAndUpdate(
+      id,
+      { $set: updates },
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedBusiness) return res.status(404).json({ message: "Business not found" });
+
+    const businessResponse = updatedBusiness.toObject();
+    delete businessResponse.passwordHash;
+
+    res.status(200).json({
+      message: "Business updated successfully",
+      business: businessResponse,
+    });
+  } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Server error" });
   }

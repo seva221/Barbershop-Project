@@ -78,6 +78,20 @@ export const getBusinessData = async (businessId) => {
   };
 };
 
+// עדכון תמונת עסק (דורש טוקן של מנהל עסק)
+export const updateBusinessImage = async (businessId, imageUrl, token) => {
+  // שים לב לנתיב המעודכן: /auth/business/update/
+  const response = await fetch(`${BASE_URL}/auth/business/update/${businessId}`, {
+    method: 'PATCH',
+    headers: { 
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}` 
+    },
+    body: JSON.stringify({ image: imageUrl }),
+  });
+  return handleResponse(response);
+};
+
 // יצירת שירות חדש לעסק (דורש טוקן של מנהל עסק)
 export const createService = async (serviceData, token) => {
   const response = await fetch(`${BASE_URL}/resources/services`, {

@@ -139,7 +139,7 @@ const Navbar = ({ user, setView, onLogout }) => (
 );
 
 
-const AdminDashboard = ({ user, appointments = [], onStatusUpdate, onApprove }) => {
+const AdminDashboard = ({ user, appointments = [], onStatusUpdate, onApprove, setUser }) => {
   const businessId = user?._id || user?.id || '';
   // --- States ---
   const [isModalOpen, setIsModalOpen] = useState(false); // למודל שירות
@@ -149,6 +149,32 @@ const AdminDashboard = ({ user, appointments = [], onStatusUpdate, onApprove }) 
   const [workerData, setWorkerData] = useState({ name: '', phone: '', businessId: businessId });
   
   // --- Handlers ---
+const handleImageChange = async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  try {
+    // יוצרים URL זמני מהקובץ שנבחר
+    const imageUrl = URL.createObjectURL(file);
+
+    // שולחים רק את ה-URL ל-API
+    const updatedBusiness = await api.updateBusinessImage(
+      businessId,
+      imageUrl, // עכשיו זה פשוט מחרוזת
+      user?.token
+    );
+
+    setUser(prev => ({
+      ...prev,
+      image: updatedBusiness.business.image
+    }));
+
+    alert("התמונה עודכנה בהצלחה!");
+  } catch (err) {
+    console.error(err);
+    alert("שגיאה בעדכון התמונה");
+  }
+};
   
   // פונקציה להוספת שירות
   const handleAddService = async (e) => {
@@ -206,6 +232,11 @@ const AdminDashboard = ({ user, appointments = [], onStatusUpdate, onApprove }) 
     {/* --- Header & Buttons --- */}
     <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'2rem'}}>
         <h1 style={{fontSize:'2.5rem'}}>לוח ניהול {user?.name} {/* {Icons?.Chart} */}</h1>
+        
+        <label className="btn" style={{backgroundColor: '#6366f1', color: 'white', width:'auto', fontWeight: 'bold', padding: '0.8rem 1.5rem', borderRadius: '8px', cursor: 'pointer'}}>
+            {Icons.Camera} שינוי תמונת עסק
+            <input type="file" hidden accept="image/*" onChange={handleImageChange} />
+          </label>
         
         <div style={{display: 'flex', gap: '1rem'}}>
           <button 
@@ -701,9 +732,12 @@ const handleRegisterBusiness = async (formData) => {
                     businesses.map((b, index) => (
                       <div key={b._id} className="card card-hover" onClick={() => handleBookingClick(b)} style={{cursor:'pointer'}}>
                         <img 
-                          src={b.image || `https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=800&q=80&sig=${index}`} 
+                          src={b.image && b.image.startsWith('http') ? b.image : 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=800'} 
                           className="card-img" 
                           alt={b.name}
+                          onError={(e) => {
+                            e.target.src = 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=800';
+                          }}
                         />
                         <div className="card-content">
                           <h3 style={{margin:'0'}}>{b.name}</h3>
@@ -752,7 +786,7 @@ const handleRegisterBusiness = async (formData) => {
           </>
       )}
 
-      {view === 'admin' && user?.role === 'business' && <AdminDashboard user={user} appointments={appointments} onStatusUpdate={handleCancelAppointment} onApprove={(id) => alert('התור אושר!')} />}
+      {view === 'admin' && <AdminDashboard user={user} appointments={appointments} onStatusUpdate={()=>{}} onApprove={()=>{}} setUser={setUser} />}
       {view === 'profile' && user && <UserProfile user={user} appointments={appointments} onCancel={handleCancelAppointment} onReschedule={handleChangeAppointment}  />}
       {view === 'login' && <Auth onLogin={handleLogin} onLoginBusiness={handleLoginBusiness} onRegisterUser={handleRegisterUser} onRegisterBusiness={handleRegisterBusiness} />}
     </div>
