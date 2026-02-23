@@ -771,6 +771,26 @@ const App = () => {
     }
   };
 
+  const handleAppointmentAction = async (id, actionType) => {
+    try {
+      // 1. Perform the API call (Using the delete logic for both for now as requested)
+      await api.deleteAppointment(id, token); //
+  
+      // 2. Perform action-specific logic
+      if (actionType === 'approve') {
+        console.log(`Appointment ${id} approved and removed from queue.`);
+        alert("התור אושר בהצלחה");
+      } else {
+        console.log(`Appointment ${id} rejected and removed from queue.`);
+        alert("התור בוטל");
+      }
+  
+      // 3. Remove from local state so it disappears from the dashboard
+      setAppointments(prev => prev.filter(app => app._id !== id));
+    } catch (err) {
+      alert("שגיאה בביצוע הפעולה: " + err.message);
+    }
+  };
 
   const handleRegisterUser = async (formData) => {
   try {
@@ -870,8 +890,7 @@ const handleRegisterBusiness = async (formData) => {
             </div>
           </>
       )}
-
-      {view === 'admin' && <AdminDashboard user={user} appointments={appointments} onStatusUpdate={()=>{}} onApprove={()=>{}} setUser={setUser} />}
+      {view === 'admin' && <AdminDashboard user={user} appointments={appointments} onStatusUpdate={(id) => handleAppointmentAction(id, 'reject')} onApprove={(id) => handleAppointmentAction(id, 'approve')}  setUser={setUser} />}
       {view === 'profile' && user && <UserProfile user={user} appointments={appointments} onCancel={handleCancelAppointment} onReschedule={handleChangeAppointment}  />}
       {view === 'login' && <Auth onLogin={handleLogin} onLoginBusiness={handleLoginBusiness} onRegisterUser={handleRegisterUser} onRegisterBusiness={handleRegisterBusiness} />}
     </div>
