@@ -134,7 +134,7 @@ const AdminDashboard = ({ user, appointments = [], onStatusUpdate, onApprove, se
     
     <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(240px, 1fr))', gap:'1.5rem', marginBottom:'3rem'}}>
       <div className="card" style={{padding: '2rem', textAlign:'center'}}>
-        <div style={{color:'var(--text-muted)'}}>תורים היום</div>
+        <div style={{color:'var(--text-muted)'}}>תורים</div>
         <div style={{fontSize:'2.5rem', fontWeight:900}}>{appointments?.length || 0}</div>
       </div>
       <div className="card" style={{padding: '2rem', textAlign:'center', borderColor:'#10b981'}}>

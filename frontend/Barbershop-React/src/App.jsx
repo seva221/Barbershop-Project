@@ -44,9 +44,14 @@ const App = () => {
     }
   }, []);
 
-  useEffect(() => {
-    if (token) api.getAppointments(token).then(setAppointments).catch(console.error);
-  }, [token, view]);
+useEffect(() => {
+    // שלחנו את ה-user לפונקציה, והוספנו אותו גם למערך התלויות
+    if (token && user) {
+      api.getAppointments(token, user)
+         .then(setAppointments)
+         .catch(console.error);
+    }
+  }, [token, view, user]);
 
   const safeFetch = async (endpoint, options) => {
     const response = await fetch(endpoint, { ...options, headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', ...options.headers } });

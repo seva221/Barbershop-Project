@@ -108,12 +108,34 @@ export const createService = async (serviceData, token) => {
 // --- BOOKING (Appointments) ---
 
 // קבלת כל התורים (ללקוח או למנהל - תלוי בטוקן)
-export const getAppointments = async (token) => {
+export const getAppointments = async (token, user) => {
   const response = await fetch(`${BASE_URL}/booking`, {
     method: 'GET',
     headers: { 'Authorization': `Bearer ${token}` },
   });
-  return handleResponse(response);
+  
+  // מקבלים את כל התורים מהשרת
+  const allAppointments = await handleResponse(response);
+  
+  // אם לא הועבר משתמש, נחזיר מערך ריק ליתר ביטחון
+  if (!user) return [];
+
+  // סינון עבור מנהל עסק (רואה רק תורים של העסק שלו)
+  if (user.role === 'business') {
+    return allAppointments.filter(app => {
+      // מושך את ה-ID של העסק מתוך התור (גם אם זה אובייקט וגם אם זה מחרוזת)
+      const appBusinessId = app.businessId?._id || app.businessId;
+      return appBusinessId === (user._id || user.id);
+    });
+  } 
+  
+  // סינון עבור לקוח רגיל (רואה רק תורים שלו)
+  else {
+    return allAppointments.filter(app => {
+      const appUserId = app.customerId || app.userId?._id || app.userId;
+      return appUserId === (user._id || user.id);
+    });
+  }
 };
 
 // יצירת תור חדש
