@@ -29,7 +29,7 @@ export const getAppointments = async (req, res) => {
 // Required for the Admin dashboard to approve/reject
 export const updateAppointment = async (req, res) => {
   try {
-    const { id } = req.params;
+    const { id, date } = req.params;
     const appointment = await Appointment.findByIdAndUpdate(id, req.body, { new: true });
     return res.status(200).json({ success: true, appointment });
   } catch (error) {

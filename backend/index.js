@@ -11,10 +11,13 @@ import cookieParser from "cookie-parser";
 dotenv.config();
 
 const app = express();
+app.use(express.json({ limit: '10mb' }));                       // for image upload
+app.use(express.urlencoded({ limit: '10mb', extended: true })); // *images can be heavy
 app.use(express.json());
 app.use(cookieParser());
 app.use(cors());
 
+app.use("/uploads", express.static("uploads"));
 
 // Routes
 

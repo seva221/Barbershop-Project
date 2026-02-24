@@ -138,9 +138,11 @@ const Navbar = ({ user, setView, onLogout }) => (
   </nav>
 );
 
-
-const AdminDashboard = ({ user, appointments = [], onStatusUpdate, onApprove }) => {
+const AdminDashboard = ({ user, appointments = [], onStatusUpdate, onApprove, setUser }) => {
   const businessId = user?._id || user?.id || '';
+  const token = user?.token || user?._token || '';
+  const totalIncome = appointments?.reduce((sum, app) => sum + (app.serviceId?.price || 0), 0) || 0;
+
   // --- States ---
   const [isModalOpen, setIsModalOpen] = useState(false); // למודל שירות
   const [serviceData, setServiceData] = useState({ name: '', duration: '', price: '' });
@@ -149,6 +151,28 @@ const AdminDashboard = ({ user, appointments = [], onStatusUpdate, onApprove }) 
   const [workerData, setWorkerData] = useState({ name: '', phone: '', businessId: businessId });
   
   // --- Handlers ---
+  const handleImageChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onloadend = async () => {
+      try {
+        const base64String = reader.result;
+        
+        // Call the API function from image_e3c4b9.png
+        const response = await api.updateBusinessImage(businessId, base64String, token);
+        
+        if (response.business) {
+          setUser(prev => ({ ...prev, image: response.business.image }));
+          alert("תמונת העסק עודכנה בהצלחה!");
+        }
+      } catch (err) {
+        alert("שגיאה בעדכון התמונה: " + err.message);
+      }
+    };
+    reader.readAsDataURL(file); // Converts image to string for the backend
+  };
   
   // פונקציה להוספת שירות
   const handleAddService = async (e) => {
@@ -161,7 +185,7 @@ const AdminDashboard = ({ user, appointments = [], onStatusUpdate, onApprove }) 
         businessId: businessId 
       };
 
-      await api.createService(payload, user?.token); 
+      await api.createService(payload, token); 
       alert('השירות נוסף בהצלחה!');
       setIsModalOpen(false);
       setServiceData({ name: '', duration: '', price: '' });
@@ -179,17 +203,18 @@ const AdminDashboard = ({ user, appointments = [], onStatusUpdate, onApprove }) 
         name: workerData.name,
         phone: workerData.phone,
         businessId: businessId
-        // הערה: אם תוסיף בעתיד תמיכה בשרת ל"התמחויות", תוכל להעביר גם את:
-        // specialties: workerData.specialties
       };
 
-      await api.createWorker(payload, user?.token); 
+      await api.createWorker(payload, token); 
       alert('העובד נוסף בהצלחה!');
       setIsWorkerModalOpen(false);
       setWorkerData({ name: '', phone: '', businessId: '' });
     } catch (error) {
       console.error("Failed to add worker. Error details:", error);
       alert('שגיאה בהוספת העובד, אנא נסה שוב.');
+      console.error("name " + workerData.name);
+      console.error("phone " + workerData.phone);
+      console.error("businessId " + businessId);
     }
   };
 
@@ -206,6 +231,11 @@ const AdminDashboard = ({ user, appointments = [], onStatusUpdate, onApprove }) 
     {/* --- Header & Buttons --- */}
     <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'2rem'}}>
         <h1 style={{fontSize:'2.5rem'}}>לוח ניהול {user?.name} {/* {Icons?.Chart} */}</h1>
+        
+        <label className="btn" style={{backgroundColor: '#6366f1', color: 'white', width:'auto', fontWeight: 'bold', padding: '0.8rem 1.5rem', borderRadius: '8px', cursor: 'pointer'}}>
+            {Icons.Camera} שינוי תמונת עסק
+            <input type="file" hidden accept="image/*" onChange={handleImageChange} />
+          </label>
         
         <div style={{display: 'flex', gap: '1rem'}}>
           <button 
@@ -240,7 +270,7 @@ const AdminDashboard = ({ user, appointments = [], onStatusUpdate, onApprove }) 
             <h2 style={{marginTop: 0, marginBottom: '2rem', fontSize: '1.2rem', fontWeight: 'bold'}}>הוספת עובד חדש</h2>
             <form onSubmit={handleAddWorker} style={{display: 'flex', flexDirection: 'column', gap: '1rem'}}>
                 <input 
-                    className="input-field" type="text" placeholder="שם העובד" 
+                    className="input-field" type="text" placeholder="שם העובד באנגלית" 
                     value={workerData.name} onChange={e => setWorkerData({...workerData, name: e.target.value})} required 
                     style={{width: '100%', boxSizing: 'border-box', padding: '1rem', borderRadius: '8px', border: '1px solid #e2e8f0'}} 
                 />
@@ -305,7 +335,7 @@ const AdminDashboard = ({ user, appointments = [], onStatusUpdate, onApprove }) 
         </div>
     </div>
     )}
-
+    
     {/* --- שאר הדשבורד --- */}
     <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(240px, 1fr))', gap:'1.5rem', marginBottom:'3rem'}}>
       <div className="card" style={{padding: '2rem', textAlign:'center'}}>
@@ -314,12 +344,14 @@ const AdminDashboard = ({ user, appointments = [], onStatusUpdate, onApprove }) 
       </div>
       <div className="card" style={{padding: '2rem', textAlign:'center', borderColor:'#10b981'}}>
         <div style={{color:'var(--text-muted)'}}>הכנסה צפויה (₪)</div>
-        <div style={{fontSize:'2.5rem', fontWeight:900}}>{(appointments?.length || 0) * 150}</div>
+        <div style={{fontSize:'2.5rem', fontWeight:900}}>{totalIncome}</div>
       </div>
+      {/* @@@@@@@@ NO IMPLEMENTATION YET @@@@@@@@
       <div className="card" style={{padding: '2rem', textAlign:'center'}}>
         <div style={{color:'var(--text-muted)'}}>דירוג ממוצע</div>
-        <div style={{fontSize:'2.5rem', fontWeight:900}}>4.9 {/* {Icons?.Star} */}</div>
+        <div style={{fontSize:'2.5rem', fontWeight:900}}>4.9 {}</div>
       </div>
+      */}
     </div>
     
     <div className="card">
@@ -327,18 +359,18 @@ const AdminDashboard = ({ user, appointments = [], onStatusUpdate, onApprove }) 
         <table style={{width:'100%', borderCollapse:'collapse'}}>
             <thead>
             <tr style={{textAlign:'right', borderBottom:'2px solid #e2e8f0'}}>
-                <th style={{padding:'1rem'}}>לקוח</th>
-                <th style={{padding:'1rem'}}>שעה</th>
-                <th style={{padding:'1rem'}}>שירות</th>
-                <th style={{padding:'1rem'}}>פעולות</th>
+                <th style={{padding:'1rem'}}>מי יש לנו?</th>
+                <th style={{padding:'1rem'}}>עד מתי הוא מתעקב?</th>
+                <th style={{padding:'1rem'}}>מה הוא רוצה ממני?</th>
+                <th style={{padding:'1rem'}}>האם הוא היה נחמד?</th>
             </tr>
             </thead>
             <tbody>
             {appointments?.map(app => (
                 <tr key={app._id} style={{borderBottom:'1px solid #f8fafc'}}>
-                <td style={{padding:'1rem', fontWeight:700}}>{app.userId?.name || 'אורח'}</td>
-                <td style={{padding:'1rem'}}>{app.time}</td>
-                <td style={{padding:'1rem'}}>{app.serviceId?.name || 'תספורת גברים'}</td>
+                <td style={{padding:'1rem', fontWeight:700}}> {app.userId?.name || app.guestDetails?.name || 'אורח'}</td>
+                <td style={{padding:'1rem'}}>{new Date(app.date).toLocaleDateString('he-IL')} | {new Date(app.date).toLocaleTimeString('he-IL', {hour: '2-digit', minute:'2-digit'})}</td>
+                <td style={{padding:'1rem'}}>{app.serviceId?.name || 'שירות כללי'}</td>
                 <td style={{padding:'1rem'}}>
                   <div style={{display:'flex', gap:'5px'}}>
                     <button className="btn" style={{padding:'0.4rem', background:'#dcfce7'}} onClick={() => onApprove(app._id)} title="אשר תור">✓</button>
@@ -353,77 +385,153 @@ const AdminDashboard = ({ user, appointments = [], onStatusUpdate, onApprove }) 
   </div>)
 };
 
-const UserProfile = ({ user, appointments, onCancel, onReschedule }) => {
-  // סטייט כדי לדעת איזה תור אנחנו עורכים עכשיו, ואת התאריך החדש
+const UserProfile = ({ user, appointments = [], onCancel, onReschedule }) => {
   const [editingId, setEditingId] = useState(null);
   const [newDate, setNewDate] = useState('');
+  // התיקון הקריטי: הוספת הסטייט החסר
+  const [newTime, setNewTime] = useState('');
 
   const handleSaveReschedule = () => {
-    if (!newDate) return alert("אנא בחר תאריך חדש");
+    if (!newDate || !newTime) return alert("אנא בחר תאריך ושעה חדשים");
     
-    // שדה type="date" מחזיר YYYY-MM-DD. נהפוך את זה ל-DD/MM/YYYY:
-    const [year, month, day] = newDate.split('-');
-    const formattedDate = `${day}/${month}/${year}`;
+    // שילוב של התאריך והשעה לפורמט הרצוי (למשל ISO או מחרוזת משולבת)
+    // הערה: תלוי מה ה-Backend שלך מצפה לקבל ב-onReschedule
+    const combinedDateTime = `${newDate}T${newTime}`;
     
-    // קריאה לפונקציה שמועברת מ-App
-    onReschedule(editingId, formattedDate);
+    onReschedule(editingId, combinedDateTime);
     
-    // סגירת מצב העריכה
+    // איפוס
     setEditingId(null);
     setNewDate('');
+    setNewTime('');
   };
 
   return (
-  <div className="container fade-in" style={{padding:'3rem 0'}}>
-    <h1 style={{marginBottom:'2rem'}}>התורים שלי {Icons.Calendar}</h1>
-    <div style={{display:'grid', gap:'1.5rem'}}>
-      {appointments.map(app => (
-        <div key={app._id} className="card" style={{display:'flex', justifyContent:'space-between', alignItems:'center', padding:'1.5rem', flexWrap: 'wrap', gap: '1rem'}}>
+    <div className="container fade-in" style={{ padding: '3rem 0', direction: 'rtl' }}>
+      <h1 style={{ marginBottom: '2rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        {Icons.Calendar} התורים שלי
+      </h1>
+      
+      <div style={{ display: 'grid', gap: '1.5rem' }}>
+        {appointments.map(app => {
+          const appointmentDate = new Date(app.date);
           
-          <div style={{display:'flex', gap:'1.5rem', alignItems:'center'}}>
-            <div style={{background:'var(--accent-soft)', padding:'1.2rem', borderRadius:'20px', fontSize:'1.8rem'}}>{Icons.Clock}</div>
-            <div>
-              <div style={{fontWeight:900, fontSize:'1.3rem'}}>{app.businessId?.name || 'המספרה'}</div>
-              <div style={{color:'var(--text-muted)'}}>{app.date} | בשעה {app.time}</div>
+          return (
+            <div key={app._id} className="card" style={{
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center', 
+              padding: '1.5rem', 
+              flexWrap: 'wrap', 
+              gap: '1rem',
+              borderRight: '5px solid var(--accent)'
+            }}>
+              
+              <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
+                <div style={{ 
+                  background: 'var(--accent-soft)', 
+                  padding: '1.2rem', 
+                  borderRadius: '20px', 
+                  fontSize: '1.8rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  {Icons.Clock}
+                </div>
+                
+                <div>
+                  <div style={{ fontWeight: 900, fontSize: '1.3rem' }}>
+                    {app.businessId?.name || 'המספרה'}
+                  </div>
+                  <div style={{ color: 'var(--text-muted)' }}>
+                    {appointmentDate.toLocaleDateString('he-IL')} בשעה {appointmentDate.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' })}
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ flexGrow: 1, display: 'flex', justifyContent: 'flex-end' }}>
+                {editingId === app._id ? (
+                  <div style={{ 
+                    display: 'flex', 
+                    gap: '0.5rem', 
+                    alignItems: 'center', 
+                    flexWrap: 'wrap',
+                    justifyContent: 'flex-end'
+                  }}>
+                    <input
+                      type="date"
+                      className="input-field"
+                      style={{ marginBottom: 0, width: 'auto', padding: '0.5rem' }}
+                      value={newDate}
+                      onChange={e => setNewDate(e.target.value)}
+                    />
+                    <input
+                      type="time"
+                      className="input-field"
+                      style={{ marginBottom: 0, width: 'auto', padding: '0.5rem' }}
+                      value={newTime}
+                      onChange={e => setNewTime(e.target.value)}
+                    />
+                    
+                    <div style={{ display: 'flex', gap: '0.4rem' }}>
+                      <button 
+                        className="btn btn-primary" 
+                        style={{ padding: '0.8rem 1rem' }} 
+                        onClick={handleSaveReschedule}
+                      >
+                        {Icons.Check} שמור
+                      </button>
+                      <button 
+                        className="btn" 
+                        style={{ padding: '0.8rem 1rem', background: '#e2e8f0' }} 
+                        onClick={() => { 
+                          setEditingId(null); 
+                          setNewDate(''); 
+                          setNewTime(''); 
+                        }}
+                      >
+                        {Icons.X}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <button 
+                      className="btn btn-primary" 
+                      style={{ width: 'auto', background: 'var(--accent)' }} 
+                      onClick={() => {
+                        setEditingId(app._id);
+                        const d = new Date(app.date);
+                        // מילוי ערכים ראשוני בשדות העריכה
+                        setNewDate(d.toISOString().split('T')[0]);
+                        setNewTime(d.toTimeString().split(' ')[0].substring(0, 5));
+                      }}
+                    >
+                      שינוי מועד
+                    </button>
+                    <button 
+                      className="btn btn-danger" 
+                      style={{ width: 'auto' }} 
+                      onClick={() => onCancel(app._id)}
+                    >
+                      {Icons.Trash} ביטול תור
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
+          );
+        })}
 
-          <div>
-            {/* אם אנחנו במצב עריכה על התור הזה, נציג את האינפוט */}
-            {editingId === app._id ? (
-              <div style={{display: 'flex', gap: '0.5rem', alignItems: 'center'}}>
-                <input 
-                  type="date" 
-                  className="input-field" 
-                  style={{marginBottom: 0, width: 'auto'}} 
-                  value={newDate} 
-                  onChange={e => setNewDate(e.target.value)} 
-                />
-                <button className="btn btn-primary" style={{padding: '0.8rem 1rem'}} onClick={handleSaveReschedule}>
-                  {Icons.Check} שמור
-                </button>
-                <button className="btn" style={{padding: '0.8rem 1rem', background: '#e2e8f0'}} onClick={() => {setEditingId(null); setNewDate('');}}>
-                  {Icons.X}
-                </button>
-              </div>
-            ) : (
-              /* אם אנחנו לא בעריכה, נציג את הכפתורים הרגילים */
-              <div style={{display: 'flex', gap: '0.5rem'}}>
-                <button className="btn btn-primary" style={{width:'auto', background: 'var(--accent)'}} onClick={() => setEditingId(app._id)}>
-                  שינוי מועד
-                </button>
-                <button className="btn btn-danger" style={{width:'auto'}} onClick={() => onCancel(app._id)}>
-                  {Icons.Trash} ביטול תור
-                </button>
-              </div>
-            )}
+        {appointments.length === 0 && (
+          <div className="card" style={{ textAlign: 'center', padding: '4rem', color: 'var(--text-muted)' }}>
+            <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📅</div>
+            טרם הזמנת תורים במערכת.
           </div>
-
-        </div>
-      ))}
-      {appointments.length === 0 && <div className="card" style={{textAlign:'center', padding:'4rem'}}>טרם הזמנת תורים במערכת.</div>}
+        )}
+      </div>
     </div>
-  </div>
   );
 };
 
@@ -439,7 +547,7 @@ const Auth = ({ onLogin, onLoginBusiness, onRegisterUser, onRegisterBusiness }) 
       else onLogin(formData.email.trim(), formData.password);
     } else {
       if (regType === 'business') onRegisterBusiness(formData);
-      else onRegisterUser(formData.name, formData.email.trim(), formData.password);
+      else onRegisterUser(formData);
     }
   };
 
@@ -519,7 +627,9 @@ const Auth = ({ onLogin, onLoginBusiness, onRegisterUser, onRegisterBusiness }) 
 // --- MAIN APP ---
 const App = () => {
   const [view, setView] = useState('home');
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState(() => {
+  const savedUser = localStorage.getItem('user');
+  return savedUser ? JSON.parse(savedUser) : null;});
   const [token, setToken] = useState(localStorage.getItem('token'));
   const [businesses, setBusinesses] = useState([]);
   const [appointments, setAppointments] = useState([]);
@@ -527,7 +637,7 @@ const App = () => {
   
   const [bookingBusiness, setBookingBusiness] = useState(null);
   const [businessResources, setBusinessResources] = useState({ services: [], workers: [] });
-  const [bookingForm, setBookingForm] = useState({ serviceId: '', workerId: '', date: '', time: '' });
+  const [bookingForm, setBookingForm] = useState({ serviceId: '', workerId: '', date: '', time: '' }); // time is collapsed to date
 
   useEffect(() => {
     const style = document.createElement('style');
@@ -574,10 +684,16 @@ const App = () => {
     return data;
   };
 
-  const handleLogin = async (email, password) => {
+const handleLogin = async (email, password) => {
     try {
       const data = await safeFetch('/api/auth/user/login', { method: 'POST', body: JSON.stringify({ email, password }) });
-      setUser(data.user); if (data.token) { setToken(data.token); localStorage.setItem('token', data.token); }
+      
+      // שמירה ב-LocalStorage
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('user', JSON.stringify(data.user)); // <--- הוספנו את זה
+      
+      setUser(data.user); 
+      setToken(data.token); 
       setView('home');
     } catch (err) { alert(err.message); }
   };
@@ -585,8 +701,14 @@ const App = () => {
   const handleLoginBusiness = async (email, password) => {
     try {
       const data = await safeFetch('/api/auth/business/login', { method: 'POST', body: JSON.stringify({ email, password }) });
-      setUser({ ...data.business, role: 'business' }); 
-      if (data.token) { setToken(data.token); localStorage.setItem('token', data.token); }
+      const businessUser = { ...data.business, role: 'business' };
+      
+      // שמירה ב-LocalStorage
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('user', JSON.stringify(businessUser)); // <--- הוספנו את זה
+
+      setUser(businessUser); 
+      setToken(data.token); 
       setView('admin');
     } catch (err) { alert(err.message); }
   };
@@ -610,10 +732,16 @@ const App = () => {
       // 1. קריאה לשרת כדי להביא את פרטי המשתמש המלאים (כולל טלפון)
       const fetchedUser = await api.getUser(currentUserId, token);
       
+      const [hours, minutes] = bookingForm.time.split(':');
+      const combinedDate = new Date(bookingForm.date);
+      combinedDate.setHours(parseInt(hours), parseInt(minutes), 0);
+
       // 2. בניית האובייקט לשליחה לפי מה ש-Zod דורש
       const payload = { 
         businessId: bookingBusiness._id, 
-        ...bookingForm, 
+        serviceId: bookingForm.serviceId, 
+        workerId: bookingForm.workerId, 
+        date: combinedDate, // includes time
         customerId: currentUserId,
         guestDetails: {
           name: fetchedUser.name,
@@ -657,10 +785,30 @@ const App = () => {
     }
   };
 
+  const handleAppointmentAction = async (id, actionType) => {
+    try {
+      // 1. Perform the API call (Using the delete logic for both for now as requested)
+      await api.deleteAppointment(id, token); //
+  
+      // 2. Perform action-specific logic
+      if (actionType === 'approve') {
+        console.log(`Appointment ${id} approved and removed from queue.`);
+        alert("התור אושר בהצלחה");
+      } else {
+        console.log(`Appointment ${id} rejected and removed from queue.`);
+        alert("התור בוטל");
+      }
+  
+      // 3. Remove from local state so it disappears from the dashboard
+      setAppointments(prev => prev.filter(app => app._id !== id));
+    } catch (err) {
+      alert("שגיאה בביצוע הפעולה: " + err.message);
+    }
+  };
 
-  const handleRegisterUser = async (name, email, password) => {
+  const handleRegisterUser = async (formData) => {
   try {
-    const data = await api.register(name, email, password);
+    const data = await api.register(formData);
     alert("נרשמת בהצלחה!");
     setUser(data.user);
     setView("home");
@@ -681,7 +829,7 @@ const handleRegisterBusiness = async (formData) => {
 
   return (
     <div style={{minHeight:'100vh', background:'var(--bg)'}}>
-      <Navbar user={user} setView={setView} onLogout={() => { setUser(null); setToken(null); localStorage.removeItem('token'); setView('home'); }} />
+      <Navbar user={user} setView={setView} onLogout={() => { setUser(null); setToken(null); localStorage.removeItem('token'); localStorage.removeItem('user'); setView('home'); }} />
       
       {view === 'home' && (
         <div className="fade-in">
@@ -701,9 +849,14 @@ const handleRegisterBusiness = async (formData) => {
                     businesses.map((b, index) => (
                       <div key={b._id} className="card card-hover" onClick={() => handleBookingClick(b)} style={{cursor:'pointer'}}>
                         <img 
-                          src={b.image || `https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=800&q=80&sig=${index}`} 
+                          /* Priority: Use the uploaded string (b.image), otherwise use a placeholder */
+                          src={b.image ? b.image : 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=800'} 
                           className="card-img" 
                           alt={b.name}
+                          onError={(e) => {
+                            /* If the string is corrupted, revert to placeholder */
+                            e.target.src = 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=800';
+                          }}
                         />
                         <div className="card-content">
                           <h3 style={{margin:'0'}}>{b.name}</h3>
@@ -751,8 +904,7 @@ const handleRegisterBusiness = async (formData) => {
             </div>
           </>
       )}
-
-      {view === 'admin' && user?.role === 'business' && <AdminDashboard user={user} appointments={appointments} onStatusUpdate={handleCancelAppointment} onApprove={(id) => alert('התור אושר!')} />}
+      {view === 'admin' && <AdminDashboard user={user} appointments={appointments} onStatusUpdate={(id) => handleAppointmentAction(id, 'reject')} onApprove={(id) => handleAppointmentAction(id, 'approve')}  setUser={setUser} />}
       {view === 'profile' && user && <UserProfile user={user} appointments={appointments} onCancel={handleCancelAppointment} onReschedule={handleChangeAppointment}  />}
       {view === 'login' && <Auth onLogin={handleLogin} onLoginBusiness={handleLoginBusiness} onRegisterUser={handleRegisterUser} onRegisterBusiness={handleRegisterBusiness} />}
     </div>

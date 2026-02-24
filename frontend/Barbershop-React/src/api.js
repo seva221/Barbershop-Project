@@ -40,11 +40,11 @@ export const loginBusiness = async (email, password) => {
 };
 
 // הרשמת לקוח
-export const register = async (name, email, password) => {
+export const register = async (formData) => {
   const response = await fetch(`${BASE_URL}/auth/user/register`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name, email, password }),
+    body: JSON.stringify(formData),
   });
   return handleResponse(response);
 };
@@ -76,6 +76,20 @@ export const getBusinessData = async (businessId) => {
     services: data.services || [],
     workers: data.workers || []
   };
+};
+
+// עדכון תמונת עסק (דורש טוקן של מנהל עסק)
+export const updateBusinessImage = async (businessId, imageUrl, token) => {
+  // שים לב לנתיב המעודכן: /auth/business/update/
+  const response = await fetch(`${BASE_URL}/auth/business/update/${businessId}`, {
+    method: 'PATCH',
+    headers: { 
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}` 
+    },
+    body: JSON.stringify({ image: imageUrl }),
+  });
+  return handleResponse(response);
 };
 
 // יצירת שירות חדש לעסק (דורש טוקן של מנהל עסק)
@@ -161,3 +175,5 @@ export const getUser = async (userId, token) => {
   });
   return handleResponse(response);
 };
+
+

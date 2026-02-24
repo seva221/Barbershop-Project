@@ -37,6 +37,12 @@ const businessSchema = new mongoose.Schema(
     address:{
       type: String,
       required:true,
+      trim:true,
+    },
+
+    image: {
+      type: String, 
+      default: ""   
     },
 
     status: {
