@@ -32,7 +32,13 @@ export const updateAppointment = async (req, res) => {
     const { id } = req.params;
     const { date } = req.body; // התאריך החדש מגיע מה-body
 
-    // אם נשלח תאריך לעדכון, נבדוק שהוא לא בעבר
+    // 1. קודם כל נשלוף את התור הנוכחי כדי לדעת לאיזה עסק הוא שייך
+    const existingAppointment = await Appointment.findById(id);
+    if (!existingAppointment) {
+      return res.status(404).json({ success: false, message: "התור לא נמצא" });
+    }
+
+    // אם נשלח תאריך לעדכון, נבצע את הבדיקות
     if (date) {
       const incomingDate = new Date(date);
       const today = new Date();
@@ -40,26 +46,37 @@ export const updateAppointment = async (req, res) => {
       // מאפסים את השעות של היום כדי לאפשר קביעת תור להיום מאוחר יותר
       today.setHours(0, 0, 0, 0); 
 
+      // בדיקה 1: מוודאים שהתאריך לא בעבר
       if (incomingDate < today) {
         return res.status(400).json({ 
           success: false, 
           message: "לא ניתן לקבוע תור לתאריך שעבר" 
         });
       }
+
+      // בדיקה 2: מוודאים שאין תור אחר לאותו עסק באותה שעה
+      const conflictingAppointment = await Appointment.findOne({
+        businessId: existingAppointment.businessId, // אותו עסק
+        date: incomingDate,                         // אותו תאריך ושעה בדיוק
+        _id: { $ne: id }                            // מתעלם מהתור הנוכחי (למקרה שהמשתמש שמר ללא שינוי)
+      });
+
+      if (conflictingAppointment) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "המועד שבחרת כבר תפוס, אנא בחר תאריך או שעה אחרים" 
+        });
+      }
     }
 
+    // 2. אם כל הבדיקות עברו בהצלחה, נעדכן את התור
     const appointment = await Appointment.findByIdAndUpdate(id, req.body, { new: true });
-    
-    if (!appointment) {
-      return res.status(404).json({ success: false, message: "התור לא נמצא" });
-    }
 
     return res.status(200).json({ success: true, appointment });
   } catch (error) {
-    return res.status(500).json({ message: error.message });
+    return res.status(500).json({ success: false, message: error.message });
   }
 };
-
 export const createAppointment = async (req, res) => {
   const session = await mongoose.startSession();
   session.startTransaction();
