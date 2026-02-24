@@ -114,27 +114,38 @@ export const getAppointments = async (token, user) => {
     headers: { 'Authorization': `Bearer ${token}` },
   });
   
-  // מקבלים את כל התורים מהשרת
   const allAppointments = await handleResponse(response);
   
-  // אם לא הועבר משתמש, נחזיר מערך ריק ליתר ביטחון
   if (!user) return [];
 
-  // סינון עבור מנהל עסק (רואה רק תורים של העסק שלו)
+  // ממירים את מזהה המשתמש לטקסט ודואגים לתפוס אותו לא משנה אם קוראים לו id או _id
+  const currentUserId = String(user._id || user.id);
+
+  // מדפיס לקונסול כדי שתוכל לראות בדיוק מה השרת מחזיר (F12 בדפדפן)
+  // סינון עבור עסק
   if (user.role === 'business') {
-    return allAppointments.filter(app => {
-      // מושך את ה-ID של העסק מתוך התור (גם אם זה אובייקט וגם אם זה מחרוזת)
-      const appBusinessId = app.businessId?._id || app.businessId;
-      return appBusinessId === (user._id || user.id);
-    });
+    const filteredForBusiness = allAppointments.filter(app => {
+      const appBusinessId = String(app.businessId?._id || app.businessId);
+      return appBusinessId === currentUserId;
+     });
+    return filteredForBusiness;
   } 
   
-  // סינון עבור לקוח רגיל (רואה רק תורים שלו)
+  // סינון עבור לקוח
   else {
-    return allAppointments.filter(app => {
-      const appUserId = app.customerId || app.userId?._id || app.userId;
-      return appUserId === (user._id || user.id);
+    const filteredForUser = allAppointments.filter(app => {
+      // מחפש את ה-ID של הלקוח בכל מקום אפשרי (תלוי איך הגדרת ב-Model בבקאנד)
+      const appUserId = String(
+        app.customerId?._id || 
+        app.customerId || 
+        app.userId?._id || 
+        app.userId
+      );
+      
+      return appUserId === currentUserId;
     });
+    
+    return filteredForUser;
   }
 };
 
