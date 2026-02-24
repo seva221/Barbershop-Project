@@ -29,8 +29,31 @@ export const getAppointments = async (req, res) => {
 // Required for the Admin dashboard to approve/reject
 export const updateAppointment = async (req, res) => {
   try {
-    const { id, date } = req.params;
+    const { id } = req.params;
+    const { date } = req.body; // התאריך החדש מגיע מה-body
+
+    // אם נשלח תאריך לעדכון, נבדוק שהוא לא בעבר
+    if (date) {
+      const incomingDate = new Date(date);
+      const today = new Date();
+      
+      // מאפסים את השעות של היום כדי לאפשר קביעת תור להיום מאוחר יותר
+      today.setHours(0, 0, 0, 0); 
+
+      if (incomingDate < today) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "לא ניתן לקבוע תור לתאריך שעבר" 
+        });
+      }
+    }
+
     const appointment = await Appointment.findByIdAndUpdate(id, req.body, { new: true });
+    
+    if (!appointment) {
+      return res.status(404).json({ success: false, message: "התור לא נמצא" });
+    }
+
     return res.status(200).json({ success: true, appointment });
   } catch (error) {
     return res.status(500).json({ message: error.message });

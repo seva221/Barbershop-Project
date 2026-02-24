@@ -1,4 +1,4 @@
-/* --- משתנים ועיצוב גלובלי משופר --- */
+/* --- משתנים ועיצוב גלובלי משופר (Premium Calmark Design) --- */
 :root {
   /* פלטת צבעים מודרנית */
   --primary: #0f172a;       /* Dark Slate */
@@ -6,37 +6,38 @@
   --secondary: #ffffff;
   --accent: #2563eb;        /* Vivid Blue */
   --accent-soft: #eff6ff;
-  --bg-color: #f1f5f9;      /* Slate 100 - רקע עמוק יותר */
-  --text-main: #0f172a;
+  --bg-color: #f8fafc;      /* Slate 50 - רקע רך */
+  --card-bg: #ffffff;
+  --text-main: #1e293b;
   --text-muted: #64748b;
   --border: #e2e8f0;
   --success: #10b981;
   
-  /* צללים מודרניים (Soft Shadows) */
+  /* צללים מודרניים */
   --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.1);
-  --shadow-md: 0 4px 12px -2px rgb(0 0 0 / 0.12), 0 2px 6px -2px rgb(0 0 0 / 0.08);
+  --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.02);
   --shadow-lg: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
   
   /* רדיוס פינות */
   --radius-md: 0.75rem;
   --radius-lg: 1.25rem;
-  --radius-xl: 2rem;
-  --radius-full: 9999px;
+  --radius-xl: 1.5rem; /* 24px */
 }
 
 body {
   margin: 0;
-  font-family: 'Inter', -apple-system, system-ui, sans-serif; /* פונט נקי יותר */
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
   background-color: var(--bg-color);
   color: var(--text-main);
   direction: rtl;
-  line-height: 1.5;
+  text-align: right;
+  line-height: 1.6;
   -webkit-font-smoothing: antialiased;
 }
 
 /* --- Utilities --- */
 .container {
-  max-width: 1100px;
+  max-width: 1200px;
   margin: 0 auto;
   padding: 0 1.5rem;
 }
@@ -51,245 +52,204 @@ body {
 .text-center { text-align: center; }
 
 /* --- Navbar (Glassmorphism Effect) --- */
+/* --- Navbar (Glassmorphism Effect) --- */
 .navbar {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
   position: sticky;
   top: 0;
-  z-index: 100;
-  background-color: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(12px); /* אפקט זכוכית */
-  border-bottom: 1px solid rgba(226, 232, 240, 0.5);
-  height: 70px;
-  display: flex;
-  align-items: center;
+  z-index: 1000;
+  padding: 1rem 0;
   transition: all 0.3s ease;
 }
 
+.nav-inner {
+  display: flex;
+  justify-content: center; /* שומר את הכל באמצע המסך */
+  align-items: center;
+  gap: 3rem; /* המרווח בין הלוגו לכפתור */
+  flex-direction: row-reverse; /* הופך את הסדר: כפתור מימין, לוגו משמאל */
+}
+
+/* כיוונון מרווחים למסכים קטנים */
+@media (max-width: 768px) {
+  .nav-inner {
+    gap: 1.5rem;
+  }
+}
 .brand {
-  font-size: 1.5rem;
-  font-weight: 800;
-  letter-spacing: -0.025em;
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
+  font-size: 1.6rem;
+  font-weight: 900;
   color: var(--primary);
-}
-
-.brand-icon {
-  background: linear-gradient(135deg, var(--primary), var(--accent));
-  color: white;
-  width: 38px;
-  height: 38px;
-  border-radius: 10px;
+  cursor: pointer;
   display: flex;
   align-items: center;
-  justify-content: center;
-  box-shadow: var(--shadow-sm);
+  gap: 0.5rem;
 }
 
-/* --- Buttons (Modern Style) --- */
-.btn {
-  border: none;
-  cursor: pointer;
-  font-weight: 600;
-  font-size: 0.9rem;
-  padding: 0.7rem 1.4rem;
-  border-radius: 12px; /* פינות פחות עגולות ליצירת מראה יוקרתי */
-  display: inline-flex;
+.brand span {
+  color: var(--accent);
+}
+
+/* --- Hero Section --- */
+.hero {
+  text-align: center;
+  padding: 8rem 1rem;
+  background: linear-gradient(rgba(15, 23, 42, 0.7), rgba(15, 23, 42, 0.7)), url('https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=1200&q=80');
+  background-size: cover;
+  background-position: center;
+  color: white;
+  border-radius: 0 0 50px 50px;
+  display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.btn-primary {
-  background-color: var(--primary);
-  color: white;
-  margin-left: 10px;
+.hero h1 {
+  font-size: 3.8rem;
+  font-weight: 900;
+  line-height: 1.1;
+  margin-bottom: 1.5rem;
 }
 
-.btn-primary:hover {
-  background-color: var(--primary-hover);
-  transform: translateY(-2px);
-  box-shadow: 0 10px 15px -3px rgba(15, 23, 42, 0.2);
+.hero h1 span {
+  color: #60a5fa;
 }
 
-.btn-secondary {
-  background-color: white;
-  border: 1px solid var(--border);
-  color: var(--text-main);
+/* --- Grid & Cards --- */
+.grid {
+  display: grid;
+  gap: 2rem;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  margin-top: 2rem;
 }
 
-.btn-secondary:hover {
-  background-color: var(--bg-color);
-  border-color: #cbd5e1;
-}
-
-/* --- Cards & Business Cards --- */
 .card {
-  background-color: white;
-  border: 1px solid rgba(226, 232, 240, 0.7);
-  border-radius: var(--radius-lg);
-  padding: 1.5rem;
-  box-shadow: var(--shadow-sm);
-  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  background: var(--card-bg);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid var(--border);
 }
 
 .card-hover:hover {
-  transform: translateY(-6px);
+  transform: translateY(-10px);
   box-shadow: var(--shadow-lg);
   border-color: var(--accent);
 }
 
-.business-image-container {
-  position: relative;
-  height: 180px;
-  overflow: hidden;
-  border-radius: 1rem;
-  margin-bottom: 1.25rem;
-}
-
-.business-image {
+.card-img {
   width: 100%;
-  height: 100%;
+  height: 240px;
   object-fit: cover;
-  transition: transform 0.5s ease;
 }
 
-.card:hover .business-image {
-  transform: scale(1.05); /* זום קטן בתמונה במעבר עכבר */
+.card-content {
+  padding: 1.5rem;
 }
 
-/* --- Home Hero --- */
-.hero-section {
-  padding: 5rem 0 3rem;
-  background: radial-gradient(circle at top right, #f8fafc, transparent);
-}
-
-.hero-title {
-  font-size: 3.5rem;
-  font-weight: 900;
-  color: var(--primary);
-  margin-bottom: 1rem;
-}
-
-.hero-title span {
-  color: var(--accent);
-  position: relative;
-}
-
-/* --- Search Box --- */
-.search-container {
-  max-width: 550px;
-  margin: 2.5rem auto;
-  position: relative;
-}
-
-.search-input {
-  width: 100%;
-  padding: 1.1rem 1.5rem 1.1rem 3.5rem;
-  border-radius: 1.25rem;
-  border: 2px solid white;
-  background: white;
-  font-size: 1rem;
-  box-shadow: var(--shadow-md);
-  outline: none;
-  transition: all 0.3s ease;
-}
-
-.search-input:focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
-}
-
-.search-icon {
-  left: 1.25rem;
-  background: var(--accent);
-  transition: all 0.3s ease;
-}
-
-/* --- Booking Steps (Wizard) --- */
-.wizard-step-card {
-  border: 2px solid transparent;
-  background: #fff;
-  margin-bottom: 0.75rem;
-  padding: 1.25rem;
-  border-radius: 1rem;
-  box-shadow: var(--shadow-sm);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  transition: 0.2s;
-}
-
-.wizard-step-card:hover {
-  background: var(--accent-soft);
-}
-
-.wizard-step-card.selected {
-  border-color: var(--accent);
-  background-color: var(--accent-soft);
-}
-
-.time-slot-btn {
-  border: 1px solid var(--border);
-  background: white;
-  padding: 0.75rem;
-  border-radius: 0.75rem;
-  font-weight: 600;
-  transition: 0.2s;
-}
-
-.time-slot-btn.selected {
-  background: var(--accent);
-  color: white;
-  border-color: var(--accent);
-}
-
-/* --- Auth / Login --- */
-.login-box {
-  background: white;
-  padding: 2.5rem;
-  border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-lg);
-}
-
+/* --- Inputs & Forms --- */
 .input-field {
-  background-color: #f8fafc;
+  width: 100%;
+  padding: 1rem;
+  border-radius: 12px;
   border: 1px solid var(--border);
-  padding: 0.9rem 1.25rem;
-  border-radius: 0.75rem;
-  margin-bottom: 1.25rem;
-  transition: all 0.2s;
+  margin-bottom: 1rem;
+  box-sizing: border-box;
+  font-size: 1rem;
+  transition: 0.2s;
+  background: #fff;
+  text-align: right;
 }
 
 .input-field:focus {
-  background-color: white;
   border-color: var(--accent);
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
   outline: none;
 }
 
-/* --- Badges --- */
-.badge {
-  font-weight: 600;
-  padding: 0.3rem 0.8rem;
-  font-size: 0.7rem;
+/* --- Buttons --- */
+.btn {
+  padding: 0.8rem 1.8rem;
+  border-radius: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: 0.3s;
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  justify-content: center;
 }
 
-.badge-blue { background: #dbeafe; color: #1e40af; }
+.btn-primary {
+  background: var(--primary);
+  color: white;
+  width: 100%;
+}
+
+.btn-primary:hover {
+  background: #000;
+  transform: translateY(-2px);
+}
+
+.btn-danger {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+/* --- Modals & Overlays --- */
+.booking-modal {
+  /* Remove position, top, left, and transform */
+  background: white;
+  padding: 2.5rem;
+  border-radius: 30px;
+  z-index: 2000;
+  width: 90%;
+  max-width: 500px;
+  box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
+  /* Add position relative just in case you add close buttons later */
+  position: relative; 
+}
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 1500;
+  backdrop-filter: blur(4px);
+  /* Add these to perfectly center the modal */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 
 /* --- Animations --- */
-.animate-fade-in {
+/* --- Animations --- */
+.fade-in {
   animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(15px); }
+  from { opacity: 0; transform: translateY(20px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+/* אנימציה ייעודית שומרת על המירכוז של המודל */
+/* Update the modal animation to a clean pop-in effect */
+.fade-in-modal {
+  animation: popInModal 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes popInModal {
+  from { opacity: 0; transform: scale(0.95) translateY(10px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
 }
 
 /* --- Responsiveness --- */
 @media (max-width: 768px) {
-  .hero-title { font-size: 2.5rem; }
-  .grid-4 { grid-template-columns: repeat(2, 1fr); }
+  .hero h1 { font-size: 2.5rem; }
 }

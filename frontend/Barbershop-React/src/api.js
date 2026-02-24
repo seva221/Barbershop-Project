@@ -130,16 +130,24 @@ export const createAppointment = async (appointmentData, token) => {
 };
 
 // עדכון/שינוי מועד תור
-export const updateAppointment = async (appointmentId, updateData, token) => {
-  const response = await fetch(`${BASE_URL}/booking/${appointmentId}`, {
-    method: 'PUT',
-    headers: { 
+export const updateAppointment = async (id, data, token) => {
+  const res = await fetch(`${BASE_URL}/booking/${id}`, {
+    method: 'PUT', // או PATCH
+    headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}` 
+      'Authorization': `Bearer ${token}`
     },
-    body: JSON.stringify(updateData),
+    body: JSON.stringify(data)
   });
-  return handleResponse(response);
+  
+  const responseData = await res.json();
+  
+  // זה החלק הסופר חשוב שגורם לשגיאות שרת לעבור ישר ל-catch ב-React
+  if (!res.ok) {
+    throw new Error(responseData.message || 'שגיאה בשרת');
+  }
+  
+  return responseData;
 };
 
 // ביטול תור
